@@ -4,16 +4,16 @@ import { useState, useEffect } from 'react'
 import { TopBar } from '@/components/TopBar'
 import { TaskList } from '@/components/TaskList'
 import { PowerSystem } from '@/components/PowerSystem'
-
-
+import { ProgressTracker } from '@/components/ProgressTracker'
+import { JournalBlock } from '@/components/JournalBlock'
 import { AICoach } from '@/components/AICoach'
 import { BottomControls } from '@/components/BottomControls'
 import { ProblemSolvingModal } from '@/components/ProblemSolvingModal'
 import { NewMeModal } from '@/components/NewMeModal'
 import { Sidebar } from '@/components/Sidebar'
+import { PowerSystemModal } from '@/components/PowerSystemModal'
 import { CalendarModal } from '@/components/CalendarModal'
-import { DailyJournalModal } from '@/components/DailyJournalModal'
-import { mockData, mockTasks, mockPowerSystemTodos, type Task } from '@/lib/utils'
+import { mockData, mockTasks, type Task } from '@/lib/utils'
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
@@ -22,10 +22,8 @@ export default function Home() {
   const [aiCoachOpen, setAiCoachOpen] = useState(false)
   const [problemSolvingOpen, setProblemSolvingOpen] = useState(false)
   const [newMeOpen, setNewMeOpen] = useState(false)
+  const [powerSystemModalOpen, setPowerSystemModalOpen] = useState(false)
   const [calendarModalOpen, setCalendarModalOpen] = useState(false)
-  const [journalModalOpen, setJournalModalOpen] = useState(false)
-  const [selectedJournalDate, setSelectedJournalDate] = useState<Date | undefined>(undefined)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Apply dark mode
   useEffect(() => {
@@ -82,7 +80,13 @@ export default function Home() {
   const handleEditTask = (taskId: string, updatedTask: Omit<Task, 'id'>) => {
     setTasks(prev => prev.map(task => 
       task.id === taskId 
-        ? { ...task, ...updatedTask }
+        ? { 
+            ...task, 
+            text: updatedTask.text, 
+            xp: updatedTask.xp, 
+            identity: updatedTask.identity,
+            completed: updatedTask.completed // Preserve the completion status from the update
+          }
         : task
     ))
   }
@@ -91,56 +95,61 @@ export default function Home() {
     setTasks(prev => prev.filter(task => task.id !== taskId))
   }
 
-  const handleOpenJournal = (date?: Date) => {
-    setSelectedJournalDate(date)
-    setJournalModalOpen(true)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
+    <div className="min-h-screen bg-white dark:bg-[#191919] transition-colors">
       {/* Sidebar */}
       <Sidebar 
+        onOpenPowerSystem={() => setPowerSystemModalOpen(true)}
         onOpenCalendar={() => setCalendarModalOpen(true)}
-        onOpenProblemSolving={() => setProblemSolvingOpen(true)}
-        onOpenNewMe={() => setNewMeOpen(true)}
-        onOpenJournal={() => handleOpenJournal()}
-        onCollapseChange={setSidebarCollapsed}
       />
 
-      {/* Main Content Wrapper */}
-      <div className={`layout-transition ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
-        {/* Top Bar */}
-        <TopBar 
-          streak={stats.streak}
-          totalXP={stats.totalXP}
-          maxXP={stats.maxXP}
-          onOpenJournal={() => handleOpenJournal()}
-        />
+      {/* Top Bar */}
+      <TopBar 
+        streak={stats.streak}
+        totalXP={stats.totalXP}
+        maxXP={stats.maxXP}
+        onOpenProblemSolving={() => setProblemSolvingOpen(true)}
+        onOpenNewMe={() => setNewMeOpen(true)}
+      />
 
-        {/* Main Content Grid */}
-        <div className="p-8 max-w-[1200px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* First Section - Today's Actions */}
-            <div>
-              <TaskList 
-                tasks={tasks}
-                onTaskToggle={handleTaskToggle}
-                onAddTask={handleAddTask}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-              />
-            </div>
+      {/* Main Content - Notion-like layout */}
+      <div className="max-w-[1200px] mx-auto px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Panel (2/3 width) */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Today's Action List */}
+            <TaskList 
+              tasks={tasks}
+              onTaskToggle={handleTaskToggle}
+              onAddTask={handleAddTask}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+            />
             
-            {/* Second Section - Power System */}
-            <div>
-              <PowerSystem 
-                brain={stats.brain}
-                muscle={stats.muscle}
-                money={stats.money}
-              />
-            </div>
+            {/* Power System */}
+            <PowerSystem 
+              brain={stats.brain}
+              muscle={stats.muscle}
+              money={stats.money}
+            />
+          </div>
+
+          {/* Right Panel (1/3 width) */}
+          <div className="space-y-8">
+            {/* Progress Tracker */}
+            <ProgressTracker 
+              brain={stats.brain}
+              muscle={stats.muscle}
+              money={stats.money}
+              totalXP={stats.totalXP}
+              maxXP={stats.maxXP}
+            />
+            
+            {/* Journal Block */}
+            <JournalBlock />
           </div>
         </div>
+      </div>
 
       {/* AI Coach Sidebar */}
       <AICoach 
@@ -166,23 +175,18 @@ export default function Home() {
         onClose={() => setNewMeOpen(false)}
       />
 
+      <PowerSystemModal 
+        isOpen={powerSystemModalOpen}
+        onClose={() => setPowerSystemModalOpen(false)}
+        brain={stats.brain}
+        muscle={stats.muscle}
+        money={stats.money}
+      />
+
       <CalendarModal 
         isOpen={calendarModalOpen}
         onClose={() => setCalendarModalOpen(false)}
-        onOpenJournal={handleOpenJournal}
-        powerSystemTodos={mockPowerSystemTodos}
       />
-
-      <DailyJournalModal 
-        isOpen={journalModalOpen}
-        onClose={() => {
-          setJournalModalOpen(false)
-          setSelectedJournalDate(undefined)
-        }}
-        selectedDate={selectedJournalDate}
-        powerSystemTodos={mockPowerSystemTodos}
-      />
-      </div>
     </div>
   )
 }
