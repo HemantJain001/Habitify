@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { TopBar } from '@/components/TopBar'
 import { TaskList } from '@/components/TaskList'
 import { PowerSystem } from '@/components/PowerSystem'
@@ -16,6 +17,7 @@ import { DailyJournalModal } from '@/components/DailyJournalModal'
 import { mockData, mockTasks, mockPowerSystemTodos, type Task } from '@/lib/utils'
 
 export default function Home() {
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [stats, setStats] = useState(mockData)
   const [darkMode, setDarkMode] = useState(false)
@@ -96,6 +98,10 @@ export default function Home() {
     setJournalModalOpen(true)
   }
 
+  const handleOpenSolvedProblems = () => {
+    router.push('/solved-problems')
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
       {/* Sidebar */}
@@ -104,6 +110,7 @@ export default function Home() {
         onOpenProblemSolving={() => setProblemSolvingOpen(true)}
         onOpenNewMe={() => setNewMeOpen(true)}
         onOpenJournal={() => handleOpenJournal()}
+        onOpenSolvedProblems={handleOpenSolvedProblems}
         onCollapseChange={setSidebarCollapsed}
       />
 

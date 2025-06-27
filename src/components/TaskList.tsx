@@ -91,11 +91,36 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
     }
   }
 
+  // Calculate progress
+  const completedTasks = tasks.filter(task => task.completed).length
+  const totalTasks = tasks.length
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
   return (
     <div className="glass backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/30 shadow-lg">
-      <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-6">
+      <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
         Today's Actions
       </h2>
+      
+      {/* Progress Bar */}
+      {totalTasks > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-600 dark:text-gray-400">
+              {completedTasks} of {totalTasks} completed
+            </span>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              {progressPercentage}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+      )}
       
       <div className="space-y-2">
         {tasks.map((task) => {

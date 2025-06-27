@@ -8,10 +8,11 @@ interface SidebarProps {
   onOpenProblemSolving?: () => void
   onOpenNewMe?: () => void
   onOpenJournal?: () => void
+  onOpenSolvedProblems?: () => void
   onCollapseChange?: (collapsed: boolean) => void
 }
 
-export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onOpenJournal, onCollapseChange }: SidebarProps) {
+export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onOpenJournal, onOpenSolvedProblems, onCollapseChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleToggleCollapse = () => {
@@ -93,6 +94,22 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onO
             isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
           }`}>
             Problem Solving
+          </span>
+        </button>
+
+        {/* Solved Problems */}
+        <button
+          onClick={onOpenSolvedProblems}
+          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
+            isCollapsed ? 'justify-center' : 'gap-3'
+          }`}
+          title="Solved Problems"
+        >
+          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">🧩</span>
+          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
+            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
+          }`}>
+            Solved Problems
           </span>
         </button>
 
