@@ -6,13 +6,41 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 interface SidebarProps {
   onOpenCalendar?: () => void
   onOpenProblemSolving?: () => void
-  onOpenNewMe?: () => void
+  onOpenTrackYourself?: () => void
   onOpenJournal?: () => void
   onOpenSolvedProblems?: () => void
+  onOpenDashboard?: () => void
   onCollapseChange?: (collapsed: boolean) => void
 }
 
-export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onOpenJournal, onOpenSolvedProblems, onCollapseChange }: SidebarProps) {
+interface SidebarButtonProps {
+  onClick?: () => void
+  icon: string
+  label: string
+  title: string
+  isCollapsed: boolean
+}
+
+function SidebarButton({ onClick, icon, label, title, isCollapsed }: SidebarButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover cursor-pointer ${
+        isCollapsed ? 'justify-center' : 'gap-3'
+      }`}
+      title={title}
+    >
+      <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">{icon}</span>
+      <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
+        isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
+      }`}>
+        {label}
+      </span>
+    </button>
+  )
+}
+
+export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYourself, onOpenJournal, onOpenSolvedProblems, onOpenDashboard, onCollapseChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleToggleCollapse = () => {
@@ -32,11 +60,11 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onO
         <h2 className={`text-base font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent sidebar-content-transition ${
           isCollapsed ? 'opacity-0 scale-90 w-0' : 'opacity-100 scale-100 w-auto'
         }`}>
-          Navigation
+          Attack Mode
         </h2>
         <button
           onClick={handleToggleCollapse}
-          className="p-2 hover:bg-white/80 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-300 notion-hover hover:scale-105"
+          className="p-2 hover:bg-white/80 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-300 notion-hover hover:scale-105 cursor-pointer"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
@@ -49,85 +77,53 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenNewMe, onO
 
       {/* Menu Items */}
       <div className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {/* Calendar */}
-        <button
+        <SidebarButton
+          onClick={onOpenDashboard}
+          icon="🏠"
+          label="Dashboard"
+          title="Dashboard"
+          isCollapsed={isCollapsed}
+        />
+
+        <SidebarButton
           onClick={onOpenCalendar}
-          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          }`}
+          icon="📅"
+          label="Calendar"
           title="Calendar"
-        >
-          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">📅</span>
-          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
-            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            Calendar
-          </span>
-        </button>
+          isCollapsed={isCollapsed}
+        />
 
-        {/* Daily Journal */}
-        <button
+        <SidebarButton
           onClick={onOpenJournal}
-          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          }`}
+          icon="📖"
+          label="Daily Journal"
           title="Daily Journal"
-        >
-          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">📖</span>
-          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
-            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            Daily Journal
-          </span>
-        </button>
+          isCollapsed={isCollapsed}
+        />
 
-        {/* Problem Solving */}
-        <button
+        <SidebarButton
           onClick={onOpenProblemSolving}
-          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          }`}
+          icon="🧠"
+          label="Problem Solving"
           title="Problem Solving"
-        >
-          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">🧠</span>
-          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
-            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            Problem Solving
-          </span>
-        </button>
+          isCollapsed={isCollapsed}
+        />
 
-        {/* Solved Problems */}
-        <button
+        <SidebarButton
           onClick={onOpenSolvedProblems}
-          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          }`}
+          icon="🧩"
+          label="Solved Problems"
           title="Solved Problems"
-        >
-          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">🧩</span>
-          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
-            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            Solved Problems
-          </span>
-        </button>
+          isCollapsed={isCollapsed}
+        />
 
-        {/* New Me */}
-        <button
-          onClick={onOpenNewMe}
-          className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          }`}
-          title="New Me"
-        >
-          <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">🚀</span>
-          <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
-            isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            New Me
-          </span>
-        </button>
+        <SidebarButton
+          onClick={onOpenTrackYourself}
+          icon="🚀"
+          label="Track Yourself"
+          title="Track Yourself"
+          isCollapsed={isCollapsed}
+        />
       </div>
     </div>
   )

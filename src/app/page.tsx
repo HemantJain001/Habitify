@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+
 import { TopBar } from '@/components/TopBar'
 import { TaskList } from '@/components/TaskList'
 import { PowerSystem } from '@/components/PowerSystem'
@@ -10,11 +11,13 @@ import { PowerSystem } from '@/components/PowerSystem'
 import { AICoach } from '@/components/AICoach'
 import { BottomControls } from '@/components/BottomControls'
 import { ProblemSolvingModal } from '@/components/ProblemSolvingModal'
-import { NewMeModal } from '@/components/NewMeModal'
+import { SimpleBehaviorModal } from '@/components/SimpleBehaviorModal'
+import { SolvedProblemsModal } from '@/components/SolvedProblemsModal'
 import { Sidebar } from '@/components/Sidebar'
 import { CalendarModal } from '@/components/CalendarModal'
 import { DailyJournalModal } from '@/components/DailyJournalModal'
-import { mockData, mockTasks, mockPowerSystemTodos, type Task } from '@/lib/utils'
+
+import { mockData, mockTasks, mockPowerSystemTodos, type Task, type PowerSystemTodo } from '@/lib/utils'
 
 export default function Home() {
   const router = useRouter()
@@ -22,12 +25,16 @@ export default function Home() {
   const [stats, setStats] = useState(mockData)
   const [darkMode, setDarkMode] = useState(false)
   const [aiCoachOpen, setAiCoachOpen] = useState(false)
+
   const [problemSolvingOpen, setProblemSolvingOpen] = useState(false)
-  const [newMeOpen, setNewMeOpen] = useState(false)
+  const [quickTrackYourselfOpen, setQuickTrackYourselfOpen] = useState(false)
+  const [solvedProblemsOpen, setSolvedProblemsOpen] = useState(false)
   const [calendarModalOpen, setCalendarModalOpen] = useState(false)
   const [journalModalOpen, setJournalModalOpen] = useState(false)
   const [selectedJournalDate, setSelectedJournalDate] = useState<Date | undefined>(undefined)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+
 
   // Apply dark mode
   useEffect(() => {
@@ -102,15 +109,21 @@ export default function Home() {
     router.push('/solved-problems')
   }
 
+  const handleOpenDashboard = () => {
+    // Since dashboard is unified with home page, just scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
       {/* Sidebar */}
       <Sidebar 
         onOpenCalendar={() => setCalendarModalOpen(true)}
         onOpenProblemSolving={() => setProblemSolvingOpen(true)}
-        onOpenNewMe={() => setNewMeOpen(true)}
+        onOpenTrackYourself={() => setQuickTrackYourselfOpen(true)}
         onOpenJournal={() => handleOpenJournal()}
         onOpenSolvedProblems={handleOpenSolvedProblems}
+        onOpenDashboard={handleOpenDashboard}
         onCollapseChange={setSidebarCollapsed}
       />
 
@@ -126,6 +139,17 @@ export default function Home() {
 
         {/* Main Content Grid */}
         <div className="p-8 max-w-[1200px] mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Attack Mode
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Transform your life through consistent daily actions
+            </p>
+          </div>
+
+          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* First Section - Today's Actions */}
             <div>
@@ -167,11 +191,6 @@ export default function Home() {
         isOpen={problemSolvingOpen}
         onClose={() => setProblemSolvingOpen(false)}
       />
-      
-      <NewMeModal 
-        isOpen={newMeOpen}
-        onClose={() => setNewMeOpen(false)}
-      />
 
       <CalendarModal 
         isOpen={calendarModalOpen}
@@ -188,6 +207,16 @@ export default function Home() {
         }}
         selectedDate={selectedJournalDate}
         powerSystemTodos={mockPowerSystemTodos}
+      />
+
+      <SolvedProblemsModal 
+        isOpen={solvedProblemsOpen}
+        onClose={() => setSolvedProblemsOpen(false)}
+      />
+
+      <SimpleBehaviorModal 
+        isOpen={quickTrackYourselfOpen}
+        onClose={() => setQuickTrackYourselfOpen(false)}
       />
       </div>
     </div>

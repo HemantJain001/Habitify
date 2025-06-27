@@ -1,27 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Search, Filter, Calendar, Brain, Target, Heart, Power, Clock, ChevronRight } from 'lucide-react'
+import { Search, Filter, Calendar, Brain, Target, Heart, Power, ChevronDown, ChevronUp, Edit3, RotateCcw, Pin, Trash2, AlertCircle } from 'lucide-react'
 import { cn, type ProblemSolvingEntry, mockProblemSolvingEntries, mockPowerSystemTodos } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 import { CalendarModal } from '@/components/CalendarModal'
 import { DailyJournalModal } from '@/components/DailyJournalModal'
 import { ProblemSolvingModal } from '@/components/ProblemSolvingModal'
-import { NewMeModal } from '@/components/NewMeModal'
+import { SimpleBehaviorModal } from '@/components/SimpleBehaviorModal'
 
 export default function SolvedProblemsPage() {
   const [problems] = useState<ProblemSolvingEntry[]>(mockProblemSolvingEntries)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState('all')
-  const [selectedProblem, setSelectedProblem] = useState<ProblemSolvingEntry | null>(null)
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   
   // Modal states
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [journalOpen, setJournalOpen] = useState(false)
   const [problemSolvingOpen, setProblemSolvingOpen] = useState(false)
-  const [newMeOpen, setNewMeOpen] = useState(false)
+  const [trackYourselfOpen, setTrackYourselfOpen] = useState(false)
 
   const filteredProblems = problems.filter(problem => {
     const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,490 +29,451 @@ export default function SolvedProblemsPage() {
                          problem.problemNature.toLowerCase().includes(searchTerm.toLowerCase())
     
     if (filterBy === 'all') return matchesSearch
+    if (filterBy === 'emotional') return matchesSearch && problem.problemNature.toLowerCase() === 'emotional'
+    if (filterBy === 'financial') return matchesSearch && problem.problemNature.toLowerCase() === 'financial'
+    if (filterBy === 'external') return matchesSearch && problem.problemNature.toLowerCase() === 'external'
     if (filterBy === 'daily') return matchesSearch && problem.isDaily
     if (filterBy === 'high-impact') return matchesSearch && problem.emotionalImpact >= 70
-    if (filterBy === 'recent') {
-      const oneWeekAgo = new Date()
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-      return matchesSearch && problem.date >= oneWeekAgo
-    }
     return matchesSearch
   })
 
-  const getSectionIcon = (section: string) => {
-    switch (section) {
-      case 'pattern':
-        return <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-      case 'solution':
-        return <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+  const toggleCardExpansion = (problemId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(problemId)) {
+        newSet.delete(problemId)
+      } else {
+        newSet.add(problemId)
+      }
+      return newSet
+    })
+  }
+
+  const getProblemTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
       case 'emotional':
-        return <Heart className="w-4 h-4 text-red-600 dark:text-red-400" />
-      case 'power':
-        return <Power className="w-4 h-4 text-green-600 dark:text-green-400" />
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+      case 'financial':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+      case 'external':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'relational':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
       default:
-        return null
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
     }
   }
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(date)
-  }
-
-  const getImpactColor = (impact: number) => {
-    if (impact >= 80) return 'text-red-600 dark:text-red-400'
-    if (impact >= 60) return 'text-orange-600 dark:text-orange-400'
-    if (impact >= 40) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-green-600 dark:text-green-400'
-  }
-
-  const getImpactBg = (impact: number) => {
-    if (impact >= 80) return 'bg-red-100 dark:bg-red-900/20'
-    if (impact >= 60) return 'bg-orange-100 dark:bg-orange-900/20'
-    if (impact >= 40) return 'bg-yellow-100 dark:bg-yellow-900/20'
-    return 'bg-green-100 dark:bg-green-900/20'
-  }
-
-  if (selectedProblem) {
-    return (
-      <div className="flex min-h-screen bg-gray-50 dark:bg-[#0A0A0A]">
-        <Sidebar
-          onOpenCalendar={() => setCalendarOpen(true)}
-          onOpenProblemSolving={() => setProblemSolvingOpen(true)}
-          onOpenNewMe={() => setNewMeOpen(true)}
-          onOpenJournal={() => setJournalOpen(true)}
-          onOpenSolvedProblems={() => {}} // Already on this page
-          onCollapseChange={setSidebarCollapsed}
+  const EmotionalImpactBar = ({ percentage }: { percentage: number }) => (
+    <div className="space-y-2">
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+        <div 
+          className="bg-gradient-to-r from-red-400 via-orange-400 to-red-600 h-3 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%` }}
         />
-        
-        <div className={cn(
-          "flex-1 transition-all duration-300",
-          sidebarCollapsed ? "ml-16" : "ml-64"
-        )}>
-          <TopBar 
-            streak={7}
-            totalXP={48}
-            maxXP={100}
-            onOpenJournal={() => setJournalOpen(true)}
-          />
-          
-          <div className="p-6">
-            <div className="max-w-4xl mx-auto">
-              {/* Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <button
-                  onClick={() => setSelectedProblem(null)}
-                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    Problem Analysis
-                  </h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Detailed breakdown of {selectedProblem.title}
-                  </p>
-                </div>
+      </div>
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>Low</span>
+        <span className="font-medium text-gray-700 dark:text-gray-300">{percentage}%</span>
+        <span>High</span>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900">
+      {/* Sidebar */}
+      <Sidebar 
+        onOpenCalendar={() => setCalendarOpen(true)}
+        onOpenProblemSolving={() => setProblemSolvingOpen(true)}
+        onOpenTrackYourself={() => setTrackYourselfOpen(true)}
+        onOpenJournal={() => setJournalOpen(true)}
+        onOpenSolvedProblems={() => {}}
+        onOpenDashboard={() => window.location.href = '/'}
+        onCollapseChange={setSidebarCollapsed}
+      />
+
+      {/* Main Content */}
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+        <TopBar 
+          streak={7}
+          totalXP={850}
+          maxXP={1000}
+          onOpenJournal={() => setJournalOpen(true)}
+        />
+
+        {/* Page Header */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-5xl mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  Solved Problems Dashboard
+                </h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                  Review the thinking trails that helped you navigate confusion and build better patterns.
+                </p>
               </div>
-
-              {/* Problem Details */}
-              <div className="bg-white dark:bg-[#191919] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-                {/* Problem Header */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        {selectedProblem.title}
-                      </h2>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(selectedProblem.date)}
-                        </div>
-                        {selectedProblem.isDaily && (
-                          <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs rounded-full">
-                            Daily Pattern
-                          </span>
-                        )}
-                        <span className={cn(
-                          "px-2 py-1 text-xs rounded-full",
-                          getImpactBg(selectedProblem.emotionalImpact),
-                          getImpactColor(selectedProblem.emotionalImpact)
-                        )}>
-                          {selectedProblem.emotionalImpact}% Impact
-                        </span>
-                      </div>
-                    </div>
+              <div className="hidden sm:flex items-center gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/30 px-4 py-3 rounded-xl">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    Total Problems
+                  </div>
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                    {problems.length}
                   </div>
                 </div>
-
-                {/* Sections */}
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {/* Pattern Analysis */}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      {getSectionIcon('pattern')}
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Pattern Analysis
-                      </h3>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Problematic Behavior
-                        </h4>
-                        <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                          {selectedProblem.wrongThing}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Trigger
-                        </h4>
-                        <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                          {selectedProblem.trigger}
-                        </p>
-                      </div>
-                      {selectedProblem.avoidTrigger && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            How to Avoid Trigger
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.avoidTrigger}
-                          </p>
-                        </div>
-                      )}
-                      {selectedProblem.onceStarted && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            How to Stop Once Started
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.onceStarted}
-                          </p>
-                        </div>
-                      )}
-                      {selectedProblem.longTermImpact && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Long-term Consequences
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.longTermImpact}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                <div className="bg-green-50 dark:bg-green-900/30 px-4 py-3 rounded-xl">
+                  <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    Daily Patterns
                   </div>
-
-                  {/* Solution Development */}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      {getSectionIcon('solution')}
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Solution Development
-                      </h3>
-                    </div>
-                    <div className="space-y-4">
-                      {selectedProblem.shouldDoInstead && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            What to Do Instead
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.shouldDoInstead}
-                          </p>
-                        </div>
-                      )}
-                      {selectedProblem.benefits && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Benefits of Change
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.benefits}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    {problems.filter(p => p.isDaily).length}
                   </div>
-
-                  {/* Emotional Impact */}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      {getSectionIcon('emotional')}
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Emotional Impact
-                      </h3>
-                    </div>
-                    <div className="space-y-4">
-                      {selectedProblem.problemNature && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Problem Nature
-                          </h4>
-                          <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-full text-sm">
-                            {selectedProblem.problemNature}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Emotional Impact Level
-                        </h4>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div 
-                              className={cn(
-                                "h-2 rounded-full transition-all duration-300",
-                                selectedProblem.emotionalImpact >= 80 ? "bg-red-500" :
-                                selectedProblem.emotionalImpact >= 60 ? "bg-orange-500" :
-                                selectedProblem.emotionalImpact >= 40 ? "bg-yellow-500" : "bg-green-500"
-                              )}
-                              style={{ width: `${selectedProblem.emotionalImpact}%` }}
-                            />
-                          </div>
-                          <span className={cn("text-sm font-medium", getImpactColor(selectedProblem.emotionalImpact))}>
-                            {selectedProblem.emotionalImpact}%
-                          </span>
-                        </div>
-                      </div>
-                      {selectedProblem.hasStrategy && selectedProblem.strategy && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Coping Strategy
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.strategy}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/30 px-4 py-3 rounded-xl">
+                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                    Avg Impact
                   </div>
-
-                  {/* Power & Control */}
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      {getSectionIcon('power')}
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Power & Control
-                      </h3>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Sense of Control
-                        </h4>
-                        <span className={cn(
-                          "inline-block px-3 py-1 rounded-full text-sm",
-                          selectedProblem.hasPower 
-                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                            : "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300"
-                        )}>
-                          {selectedProblem.hasPower ? "I have control" : "Limited control"}
-                        </span>
-                      </div>
-                      {selectedProblem.powerToChange && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            What I Can Control
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.powerToChange}
-                          </p>
-                        </div>
-                      )}
-                      {selectedProblem.longTermSolution && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Long-term Solution
-                          </h4>
-                          <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
-                            {selectedProblem.longTermSolution}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                  <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                    {Math.round(problems.reduce((acc, p) => acc + p.emotionalImpact, 0) / problems.length || 0)}%
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Modals */}
-        <CalendarModal 
-          isOpen={calendarOpen}
-          onClose={() => setCalendarOpen(false)}
-          onOpenJournal={() => setJournalOpen(true)}
-          powerSystemTodos={mockPowerSystemTodos}
-        />
-        
-        <DailyJournalModal 
-          isOpen={journalOpen}
-          onClose={() => setJournalOpen(false)}
-          powerSystemTodos={mockPowerSystemTodos}
-        />
-        
-        <ProblemSolvingModal 
-          isOpen={problemSolvingOpen}
-          onClose={() => setProblemSolvingOpen(false)}
-        />
-        
-        <NewMeModal 
-          isOpen={newMeOpen}
-          onClose={() => setNewMeOpen(false)}
-        />
-      </div>
-    )
-  }
 
-  return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0A0A0A]">
-      <Sidebar
-        onOpenCalendar={() => setCalendarOpen(true)}
-        onOpenProblemSolving={() => setProblemSolvingOpen(true)}
-        onOpenNewMe={() => setNewMeOpen(true)}
-        onOpenJournal={() => setJournalOpen(true)}
-        onOpenSolvedProblems={() => {}} // Already on this page
-        onCollapseChange={setSidebarCollapsed}
-      />
-      
-      <div className={cn(
-        "flex-1 transition-all duration-300",
-        sidebarCollapsed ? "ml-16" : "ml-64"
-      )}>
-        <TopBar 
-          streak={7}
-          totalXP={48}
-          maxXP={100}
-          onOpenJournal={() => setJournalOpen(true)}
-        />
-        
-        <div className="p-6">
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  Solved Problems
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Review your problem-solving journey and insights
-                </p>
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {filteredProblems.length} problems
-              </div>
+        {/* Content Container */}
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search problems, triggers, or solutions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              />
             </div>
-
-            {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search problems, behaviors, or categories..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select
-                  value={filterBy}
-                  onChange={(e) => setFilterBy(e.target.value)}
-                  className="pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                >
-                  <option value="all">All Problems</option>
-                  <option value="recent">Recent (7 days)</option>
-                  <option value="daily">Daily Patterns</option>
-                  <option value="high-impact">High Impact (70%+)</option>
-                </select>
-              </div>
+            
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                className="pl-10 pr-8 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm min-w-[200px]"
+              >
+                <option value="all">All Types</option>
+                <option value="emotional">Emotional</option>
+                <option value="financial">Financial</option>
+                <option value="external">External</option>
+                <option value="relational">Relational</option>
+                <option value="daily">Daily Patterns</option>
+                <option value="high-impact">High Impact (70%+)</option>
+              </select>
             </div>
+          </div>
 
-            {/* Problems Grid */}
+          {/* Problem Cards */}
+          <div className="space-y-6">
             {filteredProblems.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                  <Brain className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                <div className="max-w-md mx-auto">
+                  <AlertCircle className="w-20 h-20 mx-auto mb-6 text-gray-300 dark:text-gray-600" />
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                    No problems found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                    {searchTerm || filterBy !== 'all' 
+                      ? "Try adjusting your search or filter criteria to find what you're looking for."
+                      : "Start your reflection journey by solving your first problem. Click 'Problem Solving' in the sidebar to begin."}
+                  </p>
+                  {(!searchTerm && filterBy === 'all') && (
+                    <button 
+                      onClick={() => setProblemSolvingOpen(true)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+                    >
+                      <Brain className="w-5 h-5" />
+                      Start Problem Solving
+                    </button>
+                  )}
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  No problems found
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {searchTerm ? 'Try adjusting your search or filter criteria.' : 'Start by solving your first problem using the Problem Solving Framework.'}
-                </p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredProblems.map((problem) => (
-                  <div
-                    key={problem.id}
-                    onClick={() => setSelectedProblem(problem)}
-                    className="bg-white dark:bg-[#191919] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200 cursor-pointer group"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                            <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                              {problem.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                              {problem.wrongThing}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(problem.date)}
-                          </div>
-                          {problem.isDaily && (
-                            <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs rounded-full">
-                              Daily
-                            </span>
-                          )}
-                          {problem.problemNature && (
-                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+              filteredProblems.map((problem) => {
+                const isExpanded = expandedCards.has(problem.id)
+                
+                return (
+                  <div key={problem.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300">
+                    {/* Card Header - Always Visible */}
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getProblemTypeColor(problem.problemNature)}`}>
                               {problem.problemNature}
                             </span>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <div className={cn(
-                              "w-2 h-2 rounded-full",
-                              problem.emotionalImpact >= 80 ? "bg-red-500" :
-                              problem.emotionalImpact >= 60 ? "bg-orange-500" :
-                              problem.emotionalImpact >= 40 ? "bg-yellow-500" : "bg-green-500"
-                            )} />
-                            <span className={getImpactColor(problem.emotionalImpact)}>
-                              {problem.emotionalImpact}% impact
+                            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                              {problem.date.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
                             </span>
+                            {problem.isDaily && (
+                              <span className="px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                                Daily Pattern
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                            What was I doing wrong?
+                          </h3>
+                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-base">
+                            {problem.wrongThing}
+                          </p>
+                          
+                          {/* Impact indicator in collapsed state */}
+                          {!isExpanded && (
+                            <div className="mt-4 flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">Impact:</span>
+                                <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                  <div 
+                                    className="bg-gradient-to-r from-red-400 to-red-600 h-1.5 rounded-full"
+                                    style={{ width: `${problem.emotionalImpact}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {problem.emotionalImpact}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => toggleCardExpansion(problem.id)}
+                          className="ml-4 p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-500" />
+                          )}
+                        </button>
+                      </div>
+
+                      {!isExpanded && (
+                        <button
+                          onClick={() => toggleCardExpansion(problem.id)}
+                          className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-sm transition-colors group"
+                        >
+                          <span>View Full Reflection</span>
+                          <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                        <div className="p-6">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Section 1: Awareness & Patterns */}
+                            <div className="space-y-6">
+                              <div className="flex items-center gap-3 pb-3 border-b border-purple-200 dark:border-purple-800">
+                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                  <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                  Awareness & Patterns
+                                </h4>
+                              </div>
+
+                              <div className="space-y-5">
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    ⚠️ Problem Behavior
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.wrongThing}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🔁 Trigger Pattern
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.trigger}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    ⏳ Daily Repetition
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.isDaily ? 'Yes, this happens daily' : 'No, this is occasional'}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    😵 Wrong Path Reaction
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.onceStarted}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🧨 Long-term Impact
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.longTermImpact}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Section 2: Solution & Impact */}
+                            <div className="space-y-6">
+                              {/* Solution & Benefits */}
+                              <div className="flex items-center gap-3 pb-3 border-b border-blue-200 dark:border-blue-800">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                  <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                  Solution & Benefits
+                                </h4>
+                              </div>
+
+                              <div className="space-y-5">
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🧭 Preferred Behavior
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.shouldDoInstead}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🌱 Positive Outcome
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.benefits}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Impact & Power */}
+                              <div className="flex items-center gap-3 pb-3 border-b border-red-200 dark:border-red-800">
+                                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                  <Heart className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                </div>
+                                <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                  Impact & Power
+                                </h4>
+                              </div>
+
+                              <div className="space-y-5">
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🧩 Problem Category
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.problemNature}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
+                                    ❤️ Impact Level ({problem.emotionalImpact}%)
+                                  </label>
+                                  <EmotionalImpactBar percentage={problem.emotionalImpact} />
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    🧘 Coping Strategy
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.hasStrategy ? problem.strategy : 'No specific strategy yet'}
+                                  </p>
+                                </div>
+
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                    ⚖️ Control Source
+                                  </label>
+                                  <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                    {problem.hasPower ? 'Yes, I have power to solve this' : 'No, this is beyond my control'}
+                                  </p>
+                                </div>
+
+                                {problem.hasPower && (
+                                  <>
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                      <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                        🛠️ Actionable Power
+                                      </label>
+                                      <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                        {problem.powerToChange}
+                                      </p>
+                                    </div>
+
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                      <label className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                                        🚀 Long-term Solution
+                                      </label>
+                                      <p className="text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                                        {problem.longTermSolution}
+                                      </p>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                              <RotateCcw className="w-4 h-4" />
+                              Reflect Again
+                            </button>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium">
+                              <Edit3 className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium">
+                              <Pin className="w-4 h-4" />
+                              Pin
+                            </button>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium">
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                )
+              })
             )}
           </div>
         </div>
       </div>
-      
+
       {/* Modals */}
       <CalendarModal 
         isOpen={calendarOpen}
@@ -520,21 +481,20 @@ export default function SolvedProblemsPage() {
         onOpenJournal={() => setJournalOpen(true)}
         powerSystemTodos={mockPowerSystemTodos}
       />
-      
+
       <DailyJournalModal 
         isOpen={journalOpen}
         onClose={() => setJournalOpen(false)}
-        powerSystemTodos={mockPowerSystemTodos}
       />
-      
+
       <ProblemSolvingModal 
         isOpen={problemSolvingOpen}
         onClose={() => setProblemSolvingOpen(false)}
       />
-      
-      <NewMeModal 
-        isOpen={newMeOpen}
-        onClose={() => setNewMeOpen(false)}
+
+      <SimpleBehaviorModal 
+        isOpen={trackYourselfOpen}
+        onClose={() => setTrackYourselfOpen(false)}
       />
     </div>
   )

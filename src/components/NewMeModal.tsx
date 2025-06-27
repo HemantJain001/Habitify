@@ -59,7 +59,7 @@ export function NewMeModal({ isOpen, onClose }: NewMeModalProps) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              New Me
+              Track Yourself
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Document yourself in simple data points

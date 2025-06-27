@@ -87,7 +87,7 @@ export function JournalBlock() {
           
           <button className="w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 px-3 py-2 rounded-md text-sm font-medium transition-colors notion-hover">
             <User className="w-4 h-4" />
-            New Me Tracker
+            Track Yourself
           </button>
         </div>
       </div>
