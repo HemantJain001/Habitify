@@ -454,6 +454,65 @@ export const mockProblemSolvingEntries: ProblemSolvingEntry[] = [
   }
 ]
 
+export interface PersonalDataPoint {
+  id: string
+  title: string
+  value: string
+  category: 'identity' | 'skills' | 'goals'
+  date: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Mock personal data points
+export const mockPersonalDataPoints: PersonalDataPoint[] = [
+  {
+    id: 'data-1',
+    title: 'Core Identity',
+    value: 'Lifelong learner who thrives on solving complex problems and building meaningful solutions.',
+    category: 'identity',
+    date: new Date('2024-01-20'),
+    createdAt: new Date('2024-01-20T10:00:00'),
+    updatedAt: new Date('2024-01-20T10:00:00')
+  },
+  {
+    id: 'data-2',
+    title: 'Technical Skills',
+    value: 'Full-stack development (React, Node.js, TypeScript), System design, Machine learning basics',
+    category: 'skills',
+    date: new Date('2024-01-18'),
+    createdAt: new Date('2024-01-18T14:30:00'),
+    updatedAt: new Date('2024-01-18T14:30:00')
+  },
+  {
+    id: 'data-3',
+    title: 'Leadership Style',
+    value: 'Direct but empathetic communicator, prefer clear actionable feedback, excel in collaborative environments',
+    category: 'identity',
+    date: new Date('2024-01-15'),
+    createdAt: new Date('2024-01-15T09:15:00'),
+    updatedAt: new Date('2024-01-15T09:15:00')
+  },
+  {
+    id: 'data-4',
+    title: '5-Year Vision',
+    value: 'Leading a tech team while building products that positively impact millions of users',
+    category: 'goals',
+    date: new Date('2024-01-12'),
+    createdAt: new Date('2024-01-12T16:45:00'),
+    updatedAt: new Date('2024-01-12T16:45:00')
+  },
+  {
+    id: 'data-5',
+    title: 'Problem Solving',
+    value: 'Systematic approach to breaking down complex problems into manageable components',
+    category: 'skills',
+    date: new Date('2024-01-10'),
+    createdAt: new Date('2024-01-10T11:20:00'),
+    updatedAt: new Date('2024-01-10T11:20:00')
+  }
+]
+
 // Mock journal entries
 export const mockJournalEntries: JournalEntry[] = [
   {
@@ -481,30 +540,5 @@ export const mockJournalEntries: JournalEntry[] = [
     tomorrowGoals: ['Wake up early', 'Focus on priority tasks', 'Read for 30 minutes'],
     createdAt: new Date('2024-01-19T21:30:00'),
     updatedAt: new Date('2024-01-19T21:30:00')
-  }
-]
-
-// Mock notification settings
-export const mockNotificationSettings: NotificationSetting[] = [
-  {
-    id: 'notif-1',
-    todoId: 'brain-learning-1',
-    time: '09:00',
-    enabled: true,
-    message: 'Time to start your learning session!'
-  },
-  {
-    id: 'notif-2',
-    todoId: 'muscle-strength-1',
-    time: '18:00',
-    enabled: true,
-    message: 'Workout time! Let\'s build that strength!'
-  },
-  {
-    id: 'notif-3',
-    todoId: 'money-income-1',
-    time: '10:00',
-    enabled: false,
-    message: 'Focus on business development tasks'
   }
 ]
