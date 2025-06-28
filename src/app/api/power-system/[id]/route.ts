@@ -36,18 +36,35 @@ export async function PUT(
       )
     }
 
+    // Build update data with only provided fields
     const updateData: any = {}
     if (title !== undefined) updateData.title = title
     if (category !== undefined) updateData.category = category
     if (date !== undefined) updateData.date = new Date(date)
     if (completed !== undefined) updateData.completed = completed
 
+    // Always update updatedAt timestamp
+    updateData.updatedAt = new Date()
+
     const powerSystemTodo = await prisma.powerSystemTodo.update({
       where: { id: id },
-      data: updateData
+      data: updateData,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        completed: true,
+        date: true,
+        createdAt: true,
+        updatedAt: true,
+        userId: true
+      }
     })
 
-    return NextResponse.json({ powerSystemTodo })
+    return NextResponse.json({ 
+      powerSystemTodo,
+      updatedFields: Object.keys(updateData).filter(key => key !== 'updatedAt')
+    })
   } catch (error) {
     console.error("Update power system todo error:", error)
     return NextResponse.json(

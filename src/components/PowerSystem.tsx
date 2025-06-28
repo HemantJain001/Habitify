@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronDown, Check, Plus, Edit3, Trash2, Save, X } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { ChevronDown, Plus, Save, X, Edit3 } from 'lucide-react'
 import { cn, type IdentityStats, identityConfig, type ViewPeriod } from '@/lib/utils'
 import { usePowerSystemTodos, useCreatePowerSystemTodo, useUpdatePowerSystemTodo } from '@/lib/hooks'
 import type { PowerSystemTodo } from '@/lib/api'
+import PowerSystemTodoItem from './PowerSystemTodoItem'
 
 interface PowerSystemProps {
   brain: IdentityStats
@@ -38,16 +39,26 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
     { key: 'money', data: money }
   ] as const
 
-  const getActiveTodosCount = (identity: string) => {
+  // Memoize computed values to prevent unnecessary recalculations
+  const getActiveTodosCount = useCallback((identity: string) => {
     return todos.filter(todo => todo.category === identity).length
-  }
+  }, [todos])
 
-  const getCompletedTodayCount = (identity: string) => {
+  const getCompletedTodayCount = useCallback((identity: string) => {
     const today = new Date().toISOString().split('T')[0]
     return todos
       .filter(todo => todo.category === identity)
       .filter(todo => isCompletedToday(todo)).length
-  }
+  }, [todos])
+
+  // Memoize identity todos to prevent unnecessary filtering
+  const identityTodos = useMemo(() => {
+    return {
+      brain: todos.filter(todo => todo.category === 'brain'),
+      muscle: todos.filter(todo => todo.category === 'muscle'),
+      money: todos.filter(todo => todo.category === 'money')
+    }
+  }, [todos])
 
   const isCompletedToday = (todo: PowerSystemTodo) => {
     if (!todo.completed) return false
@@ -71,7 +82,7 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
     return todoDateStr === today
   }
 
-  const handleToggleComplete = async (todoId: string, event?: React.MouseEvent) => {
+  const handleToggleComplete = useCallback(async (todoId: string, event?: React.MouseEvent) => {
     if (event) {
       event.preventDefault()
       event.stopPropagation()
@@ -89,43 +100,37 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
     console.log('Toggling todo:', {
       todoId,
       title: todo.title,
-      currentCompleted: todo.completed,
-      currentDate: todo.date,
-      isCurrentlyCompleted,
-      today,
       newCompleted: !isCurrentlyCompleted,
       newDate: today
     })
     
     try {
-      const result = await updateTodoMutation.mutateAsync({
+      await updateTodoMutation.mutateAsync({
         id: todoId,
         data: { 
           completed: !isCurrentlyCompleted,
           date: today
         }
       })
-      console.log('Todo updated successfully:', result)
     } catch (error) {
       console.error('Error updating todo:', error)
-      // You could add toast notification here
     }
-  }
+  }, [todos, updateTodoMutation])
 
-  const handleAddTodo = async (identity: string) => {
+  const handleAddTodo = useCallback(async (identity: string) => {
     if (!newTodoText.trim()) return
     
     await createTodoMutation.mutateAsync({
       title: newTodoText.trim(),
-      category: identity, // Using category for identity grouping
+      category: identity,
       date: new Date().toISOString().split('T')[0]
     })
     
     setNewTodoText('')
     setAddingToIdentity(null)
-  }
+  }, [newTodoText, createTodoMutation])
 
-  const handleEditTodo = async (todoId: string, newText: string) => {
+  const handleEditTodo = useCallback(async (todoId: string, newText: string) => {
     if (!newText.trim()) return
     
     await updateTodoMutation.mutateAsync({
@@ -135,31 +140,29 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
     
     setEditingTodo(null)
     setEditText('')
-  }
+  }, [updateTodoMutation])
 
-  const handleDeleteTodo = async (todoId: string) => {
-    // For now, we'll just mark as completed = false
-    // In a real app, you might want a soft delete
+  const handleDeleteTodo = useCallback(async (todoId: string) => {
     await updateTodoMutation.mutateAsync({
       id: todoId,
       data: { completed: false }
     })
-  }
+  }, [updateTodoMutation])
 
-  const startEditing = (todo: PowerSystemTodo) => {
+  const startEditing = useCallback((todo: PowerSystemTodo) => {
     setEditingTodo(todo.id)
     setEditText(todo.title)
-  }
+  }, [])
 
-  const cancelEditing = () => {
+  const cancelEditing = useCallback(() => {
     setEditingTodo(null)
     setEditText('')
-  }
+  }, [])
 
-  const cancelAdding = () => {
+  const cancelAdding = useCallback(() => {
     setAddingToIdentity(null)
     setNewTodoText('')
-  }
+  }, [])
 
   return (
     <div className="glass backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/30 shadow-lg">
@@ -233,125 +236,22 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                 <div className="px-4 pb-4 bg-white dark:bg-[#191919]">
                   {/* Interactive Goals List */}
                   <div className="space-y-2">
-                    {todos
-                      .filter(todo => todo.category === key)
-                      .map((todo) => {
-                        const completedToday = isCompletedToday(todo)
-                        const isEditing = editingTodo === todo.id
-                        
-                        if (isEditing) {
-                          return (
-                            <div key={todo.id} className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                              <input
-                                type="text"
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleEditTodo(todo.id, editText)
-                                  if (e.key === 'Escape') cancelEditing()
-                                }}
-                              />
-                              <button
-                                onClick={() => handleEditTodo(todo.id, editText)}
-                                className="p-1 text-green-600 hover:text-green-700 transition-colors"
-                                title="Save"
-                              >
-                                <Save className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={cancelEditing}
-                                className="p-1 text-gray-600 hover:text-gray-700 transition-colors"
-                                title="Cancel"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )
-                        }
-                        
-                        return (
-                          <div 
-                            key={todo.id} 
-                            className={cn(
-                              "flex items-center gap-3 p-3 rounded-lg transition-all duration-300 goal-item group",
-                              !editMode && "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:scale-[1.02] hover:shadow-sm",
-                              editMode && "hover:bg-gray-50 dark:hover:bg-gray-800/50 edit-mode",
-                              completedToday && "completed bg-green-50 dark:bg-green-900/20",
-                              updateTodoMutation.isPending && "opacity-50 pointer-events-none"
-                            )}
-                            onClick={!editMode ? (e) => handleToggleComplete(todo.id, e) : undefined}
-                          >
-                            {!editMode ? (
-                              <div
-                                className={cn(
-                                  "p-1.5 rounded-full transition-all duration-300 flex-shrink-0 checkmark-button relative overflow-hidden",
-                                  completedToday 
-                                    ? "bg-green-500 text-white shadow-lg transform scale-110" 
-                                    : "border-2 border-gray-300 dark:border-gray-600 group-hover:border-green-500 dark:group-hover:border-green-500 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 group-hover:scale-110"
-                                )}
-                              >
-                                {updateTodoMutation.isPending ? (
-                                  <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <Check className={cn(
-                                    "w-3 h-3 transition-all duration-300 relative z-10",
-                                    completedToday ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-45"
-                                  )} />
-                                )}
-                                {/* Ripple effect on click */}
-                                <div className={cn(
-                                  "absolute inset-0 bg-green-500 rounded-full transition-all duration-500 opacity-0",
-                                  completedToday && "animate-ping opacity-30"
-                                )} />
-                              </div>
-                            ) : (
-                              <div className="w-8 h-8 flex items-center justify-center">
-                                <span className="text-gray-400">•</span>
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0 text-left">
-                              <span className={cn(
-                                "text-sm font-medium transition-all duration-200 block truncate",
-                                completedToday 
-                                  ? "text-green-700 dark:text-green-300 line-through" 
-                                  : "text-gray-800 dark:text-gray-200"
-                              )}>
-                                {todo.title}
-                              </span>
-                            </div>
-                            
-                            {editMode ? (
-                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  onClick={() => startEditing(todo)}
-                                  className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTodo(todo.id)}
-                                  className="p-1 text-red-600 hover:text-red-700 transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <span className={cn(
-                                "text-xs font-medium flex-shrink-0 px-2 py-1 rounded-full",
-                                completedToday 
-                                  ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30" 
-                                  : "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"
-                              )}>
-                                {completedToday ? "✓ Done" : "Pending"}
-                              </span>
-                            )}
-                          </div>
-                        )
-                      })}
+                    {identityTodos[key as keyof typeof identityTodos]?.map((todo) => (
+                      <PowerSystemTodoItem
+                        key={todo.id}
+                        todo={todo}
+                        editMode={editMode}
+                        isEditing={editingTodo === todo.id}
+                        editText={editText}
+                        isLoading={updateTodoMutation.isPending}
+                        onToggleComplete={handleToggleComplete}
+                        onStartEditing={startEditing}
+                        onEditTodo={handleEditTodo}
+                        onDeleteTodo={handleDeleteTodo}
+                        onCancelEditing={cancelEditing}
+                        onSetEditText={setEditText}
+                      />
+                    ))}
                     
                     {/* Add New Todo */}
                     {editMode && addingToIdentity === key && (
