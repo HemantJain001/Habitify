@@ -95,6 +95,66 @@ export function useCreatePowerSystemTodo() {
   })
 }
 
+// Individual todo update hook for granular control
+export function useUpdateSingleTodo() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { 
+      id: string; 
+      data: { title?: string; category?: string; completed?: boolean; date?: string } 
+    }) => powerSystemApi.updatePowerSystemTodo(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ['power-system-todos'] })
+      
+      // Get current data
+      const previousTodos = queryClient.getQueryData(['power-system-todos'])
+      
+      // Optimistically update only the specific todo
+      queryClient.setQueryData(['power-system-todos'], (old: any) => {
+        if (!old?.powerSystemTodos) return old
+        
+        return {
+          ...old,
+          powerSystemTodos: old.powerSystemTodos.map((todo: any) => 
+            todo.id === id 
+              ? { ...todo, ...data, updatedAt: new Date().toISOString() }
+              : todo
+          )
+        }
+      })
+      
+      return { previousTodos, todoId: id, updatedData: data }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousTodos) {
+        queryClient.setQueryData(['power-system-todos'], context.previousTodos)
+      }
+      console.error(`Failed to update todo ${context?.todoId}:`, err)
+    },
+    onSuccess: (result, variables, context) => {
+      // Update with server response for accuracy
+      queryClient.setQueryData(['power-system-todos'], (old: any) => {
+        if (!old?.powerSystemTodos) return old
+        
+        return {
+          ...old,
+          powerSystemTodos: old.powerSystemTodos.map((todo: any) =>
+            todo.id === variables.id ? result.powerSystemTodo : todo
+          )
+        }
+      })
+      
+      // Only invalidate stats if completion status changed
+      if (context?.updatedData?.completed !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+      }
+    },
+  })
+}
+
 export function useUpdatePowerSystemTodo() {
   const queryClient = useQueryClient()
   
@@ -104,36 +164,52 @@ export function useUpdatePowerSystemTodo() {
       data: { title?: string; category?: string; completed?: boolean; date?: string } 
     }) => powerSystemApi.updatePowerSystemTodo(id, data),
     onMutate: async ({ id, data }) => {
-      // Cancel any outgoing refetches
+      // Cancel queries to prevent race conditions
       await queryClient.cancelQueries({ queryKey: ['power-system-todos'] })
       
-      // Snapshot the previous value
+      // Get current data
       const previousTodos = queryClient.getQueryData(['power-system-todos'])
       
-      // Optimistically update to the new value
+      // Optimistically update only the specific todo
+      queryClient.setQueryData(['power-system-todos'], (old: any) => {
+        if (!old?.powerSystemTodos) return old
+        
+        return {
+          ...old,
+          powerSystemTodos: old.powerSystemTodos.map((todo: any) => 
+            todo.id === id 
+              ? { ...todo, ...data, updatedAt: new Date().toISOString() }
+              : todo
+          )
+        }
+      })
+      
+      return { previousTodos, todoId: id, updatedData: data }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousTodos) {
+        queryClient.setQueryData(['power-system-todos'], context.previousTodos)
+      }
+      console.error(`Failed to update todo ${context?.todoId}:`, err)
+    },
+    onSuccess: (result, variables, context) => {
+      // Update with server response for accuracy
       queryClient.setQueryData(['power-system-todos'], (old: any) => {
         if (!old?.powerSystemTodos) return old
         
         return {
           ...old,
           powerSystemTodos: old.powerSystemTodos.map((todo: any) =>
-            todo.id === id ? { ...todo, ...data } : todo
+            todo.id === variables.id ? result.powerSystemTodo : todo
           )
         }
       })
       
-      // Return a context object with the snapshotted value
-      return { previousTodos }
-    },
-    onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousTodos) {
-        queryClient.setQueryData(['power-system-todos'], context.previousTodos)
+      // Only invalidate stats if completion status changed
+      if (context?.updatedData?.completed !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ['user-stats'] })
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['power-system-todos'] })
-      queryClient.invalidateQueries({ queryKey: ['user-stats'] })
     },
   })
 }
