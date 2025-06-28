@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication tables (for NextAuth.js)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Core application models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  password      String?   // For manual authentication
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // NextAuth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // Application relations
+  tasks            Task[]
+  powerSystemTodos PowerSystemTodo[]
+  journalEntries   JournalEntry[]
+  problemEntries   ProblemSolvingEntry[]
+  behaviorEntries  BehaviorEntry[]
+  userStats        UserStats?
+
+  @@map("users")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  completed   Boolean   @default(false)
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  userId      String    @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completed])
+  @@map("tasks")
+}
+
+model PowerSystemTodo {
+  id        String   @id @default(cuid())
+  title     String
+  category  String   // "brain" | "muscle" | "money"
+  completed Boolean  @default(false)
+  date      DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, category])
+  @@map("power_system_todos")
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now()) @db.Date
+  notes     String   @db.Text
+  mood      Int      @default(5) // 1-10 scale
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("journal_entries")
+}
+
+model ProblemSolvingEntry {
+  id                  String   @id @default(cuid())
+  problemBehavior     String   @map("problem_behavior") @db.Text
+  triggerPattern      String   @map("trigger_pattern") @db.Text
+  isDaily             Boolean  @default(false) @map("is_daily")
+  preventiveStrategy  String?  @map("preventive_strategy") @db.Text
+  wrongPathReaction   String   @map("wrong_path_reaction") @db.Text
+  longTermConsequence String   @map("long_term_consequence") @db.Text
+  preferredBehavior   String   @map("preferred_behavior") @db.Text
+  positiveOutcome     String   @map("positive_outcome") @db.Text
+  problemCategory     String   @map("problem_category")
+  emotionalImpact     Int      @default(50) @map("emotional_impact") // 0-100 percentage
+  copingStrategy      String?  @map("coping_strategy") @db.Text
+  controlSource       String   @map("control_source") @db.Text
+  actionablePower     String?  @map("actionable_power") @db.Text
+  longTermSolution    String?  @map("long_term_solution") @db.Text
+  isPinned            Boolean  @default(false) @map("is_pinned")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  userId             String   @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isPinned])
+  @@index([userId, problemCategory])
+  @@map("problem_solving_entries")
+}
+
+model BehaviorEntry {
+  id        String   @id @default(cuid())
+  title     String
+  value     String   @db.Text // The behavior description
+  createdAt DateTime @default(now()) @map("created_at")
+  userId    String   @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("behavior_entries")
+}
+
+model UserStats {
+  id                    String @id @default(cuid())
+  currentStreak         Int    @default(0) @map("current_streak")
+  longestStreak         Int    @default(0) @map("longest_streak")
+  completionRate        Float  @default(0.0) @map("completion_rate")
+  totalTasksCompleted   Int    @default(0) @map("total_tasks_completed")
+  totalProblemsAnalyzed Int    @default(0) @map("total_problems_analyzed")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  userId               String   @unique @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}
