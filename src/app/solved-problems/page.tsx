@@ -11,12 +11,11 @@ import { ProblemSolvingModal } from '@/components/ProblemSolvingModal'
 import { SimpleBehaviorModal } from '@/components/SimpleBehaviorModal'
 
 export default function SolvedProblemsPage() {
-  const [problems, setProblems] = useState<ProblemSolvingEntry[]>(mockProblemSolvingEntries)
+  const [problems] = useState<ProblemSolvingEntry[]>(mockProblemSolvingEntries)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState('all')
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [pinnedProblems, setPinnedProblems] = useState<Set<string>>(new Set())
   
   // Modal states
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -81,31 +80,6 @@ export default function SolvedProblemsPage() {
     </div>
   )
 
-  // Button handlers
-  const handleEdit = (problemId: string) => {
-    // TODO: Implement edit functionality
-    console.log('Edit problem:', problemId)
-    // This could open an edit modal or navigate to edit page
-  }
-
-  const handlePin = (problemId: string) => {
-    setPinnedProblems(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(problemId)) {
-        newSet.delete(problemId)
-      } else {
-        newSet.add(problemId)
-      }
-      return newSet
-    })
-  }
-
-  const handleDelete = (problemId: string) => {
-    if (window.confirm('Are you sure you want to delete this problem? This action cannot be undone.')) {
-      setProblems(prev => prev.filter(problem => problem.id !== problemId))
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900">
       {/* Sidebar */}
@@ -122,6 +96,8 @@ export default function SolvedProblemsPage() {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <TopBar 
           streak={7}
+          totalXP={850}
+          maxXP={1000}
           onOpenJournal={() => setJournalOpen(true)}
         />
 
@@ -469,35 +445,19 @@ export default function SolvedProblemsPage() {
 
                           {/* Action Buttons */}
                           <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <button 
-                              onClick={() => setProblemSolvingOpen(true)}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                            >
+                            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                               <RotateCcw className="w-4 h-4" />
                               Reflect Again
                             </button>
-                            <button 
-                              onClick={() => handleEdit(problem.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
-                            >
+                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium">
                               <Edit3 className="w-4 h-4" />
                               Edit
                             </button>
-                            <button 
-                              onClick={() => handlePin(problem.id)}
-                              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
-                                pinnedProblems.has(problem.id)
-                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                              }`}
-                            >
+                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium">
                               <Pin className="w-4 h-4" />
-                              {pinnedProblems.has(problem.id) ? 'Unpin' : 'Pin'}
+                              Pin
                             </button>
-                            <button 
-                              onClick={() => handleDelete(problem.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium"
-                            >
+                            <button className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium">
                               <Trash2 className="w-4 h-4" />
                               Delete
                             </button>

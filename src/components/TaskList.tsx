@@ -119,8 +119,8 @@ function TaskItem({
 }
 
 interface AddTaskFormProps {
-  newTask: { text: string; identity: Task['identity'] }
-  onNewTaskChange: (task: { text: string; identity: Task['identity'] }) => void
+  newTask: { text: string; xp: number; identity: Task['identity'] }
+  onNewTaskChange: (task: { text: string; xp: number; identity: Task['identity'] }) => void
   onAddTask: () => void
   onCancel: () => void
 }
@@ -170,10 +170,12 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [newTask, setNewTask] = useState({
     text: '',
+    xp: 10,
     identity: 'brain' as Task['identity']
   })
   const [editTask, setEditTask] = useState({
     text: '',
+    xp: 10,
     identity: 'brain' as Task['identity']
   })
 
@@ -182,9 +184,10 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
       onAddTask({
         text: newTask.text,
         completed: false,
+        xp: newTask.xp,
         identity: newTask.identity
       })
-      setNewTask({ text: '', identity: 'brain' })
+      setNewTask({ text: '', xp: 10, identity: 'brain' })
       setShowAddForm(false)
     }
   }
@@ -193,6 +196,7 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
     setEditingTaskId(task.id)
     setEditTask({
       text: task.text,
+      xp: task.xp,
       identity: task.identity
     })
   }
@@ -204,17 +208,18 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
         onEditTask(editingTaskId, {
           text: editTask.text,
           completed: originalTask.completed,
+          xp: editTask.xp,
           identity: editTask.identity
         })
       }
       setEditingTaskId(null)
-      setEditTask({ text: '', identity: 'brain' })
+      setEditTask({ text: '', xp: 10, identity: 'brain' })
     }
   }
 
   const handleEditCancel = () => {
     setEditingTaskId(null)
-    setEditTask({ text: '', identity: 'brain' })
+    setEditTask({ text: '', xp: 10, identity: 'brain' })
   }
 
   const handleDelete = (taskId: string) => {
@@ -278,7 +283,7 @@ export function TaskList({ tasks, onTaskToggle, onAddTask, onEditTask, onDeleteT
             onAddTask={handleAddTask}
             onCancel={() => {
               setShowAddForm(false)
-              setNewTask({ text: '', identity: 'brain' })
+              setNewTask({ text: '', xp: 10, identity: 'brain' })
             }}
           />
         )}
