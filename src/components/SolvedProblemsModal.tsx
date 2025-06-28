@@ -15,7 +15,6 @@ interface SolvedProblem {
   difficulty: 'easy' | 'medium' | 'hard'
   solvedDate: Date
   timeSpent: number // in minutes
-  xpEarned: number
   tags: string[]
   solution?: string
 }
@@ -35,7 +34,6 @@ const mockSolvedProblems: SolvedProblem[] = [
     difficulty: 'hard',
     solvedDate: new Date('2024-01-15'),
     timeSpent: 180,
-    xpEarned: 150,
     tags: ['React', 'Node.js', 'JWT', 'Security'],
     solution: 'Used JWT tokens with refresh mechanism and implemented middleware for route protection'
   },
@@ -47,7 +45,6 @@ const mockSolvedProblems: SolvedProblem[] = [
     difficulty: 'medium',
     solvedDate: new Date('2024-01-12'),
     timeSpent: 60,
-    xpEarned: 75,
     tags: ['Habits', 'Health', 'Productivity'],
     solution: 'Created a structured 90-minute morning routine with time blocks for each activity'
   },
@@ -59,7 +56,6 @@ const mockSolvedProblems: SolvedProblem[] = [
     difficulty: 'hard',
     solvedDate: new Date('2024-01-10'),
     timeSpent: 240,
-    xpEarned: 200,
     tags: ['Database', 'SQL', 'Performance', 'Optimization'],
     solution: 'Added composite indexes and rewrote queries to use proper JOIN conditions'
   },
@@ -71,7 +67,6 @@ const mockSolvedProblems: SolvedProblem[] = [
     difficulty: 'medium',
     solvedDate: new Date('2024-01-08'),
     timeSpent: 90,
-    xpEarned: 100,
     tags: ['Communication', 'Business', 'Strategy'],
     solution: 'Implemented active listening techniques and structured meeting agendas'
   }
@@ -114,7 +109,6 @@ export function SolvedProblemsModal({ isOpen, onClose }: SolvedProblemsModalProp
     }
   }
 
-  const totalXP = mockSolvedProblems.reduce((sum, problem) => sum + problem.xpEarned, 0)
   const totalTimeSpent = mockSolvedProblems.reduce((sum, problem) => sum + problem.timeSpent, 0)
 
   return (
@@ -147,21 +141,13 @@ export function SolvedProblemsModal({ isOpen, onClose }: SolvedProblemsModalProp
 
         {/* Stats Overview */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {mockSolvedProblems.length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Problems Solved
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {totalXP}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                XP Earned
               </div>
             </div>
             <div className="text-center">
@@ -272,10 +258,6 @@ export function SolvedProblemsModal({ isOpen, onClose }: SolvedProblemsModalProp
                         <Clock className="w-3 h-3" />
                         {problem.timeSpent}m
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
-                      <Award className="w-3 h-3" />
-                      +{problem.xpEarned} XP
                     </div>
                   </div>
                 </div>

@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { ChevronDown, Check, Plus, Edit3, Trash2, Save, X } from 'lucide-react'
-import { cn, type IdentityStats, identityConfig, mockPowerSystemTodos, type ViewPeriod, type PowerSystemTodo } from '@/lib/utils'
+import { cn, type IdentityStats, identityConfig, type ViewPeriod } from '@/lib/utils'
+import { usePowerSystemTodos, useCreatePowerSystemTodo, useUpdatePowerSystemTodo } from '@/lib/hooks'
+import type { PowerSystemTodo } from '@/lib/api'
 
 interface PowerSystemProps {
   brain: IdentityStats
@@ -13,7 +15,13 @@ interface PowerSystemProps {
 export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [viewPeriod, setViewPeriod] = useState<ViewPeriod>('weekly')
-  const [todos, setTodos] = useState(mockPowerSystemTodos)
+  
+  // API hooks
+  const { data: powerSystemData, isLoading } = usePowerSystemTodos()
+  const createTodoMutation = useCreatePowerSystemTodo()
+  const updateTodoMutation = useUpdatePowerSystemTodo()
+  
+  const todos = powerSystemData?.powerSystemTodos || []
   const [editMode, setEditMode] = useState(false)
   const [editingTodo, setEditingTodo] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -31,109 +39,116 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
   ] as const
 
   const getActiveTodosCount = (identity: string) => {
-    return todos.filter(todo => todo.identity === identity && todo.isActive).length
+    return todos.filter(todo => todo.category === identity).length
   }
 
   const getCompletedTodayCount = (identity: string) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = new Date().toISOString().split('T')[0]
     return todos
-      .filter(todo => todo.identity === identity && todo.isActive)
-      .filter(todo => 
-        todo.completedDates.some(date => {
-          const completedDate = new Date(date)
-          completedDate.setHours(0, 0, 0, 0)
-          return completedDate.getTime() === today.getTime()
-        })
-      ).length
+      .filter(todo => todo.category === identity)
+      .filter(todo => isCompletedToday(todo)).length
   }
 
-  const isCompletedToday = (todo: any) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return todo.completedDates.some((date: Date) => {
-      const completedDate = new Date(date)
-      completedDate.setHours(0, 0, 0, 0)
-      return completedDate.getTime() === today.getTime()
-    })
-  }
-
-  const handleToggleComplete = (todoId: string) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  const isCompletedToday = (todo: PowerSystemTodo) => {
+    if (!todo.completed) return false
     
-    setTodos(prev => prev.map(todo => {
-      if (todo.id === todoId) {
-        const isAlreadyCompleted = isCompletedToday(todo)
-        let newCompletedDates = [...todo.completedDates]
-        
-        if (isAlreadyCompleted) {
-          // Remove today's completion
-          newCompletedDates = newCompletedDates.filter(date => {
-            const completedDate = new Date(date)
-            completedDate.setHours(0, 0, 0, 0)
-            return completedDate.getTime() !== today.getTime()
-          })
-        } else {
-          // Add today's completion
-          newCompletedDates.push(today)
-        }
-        
-        return {
-          ...todo,
-          completedDates: newCompletedDates,
-          lastCompletedDate: isAlreadyCompleted ? todo.lastCompletedDate : today,
-          updatedAt: new Date()
-        }
+    const today = new Date().toISOString().split('T')[0]
+    let todoDateStr = ''
+    
+    // Handle both string and Date types for the date field
+    if (todo.date instanceof Date) {
+      todoDateStr = todo.date.toISOString().split('T')[0]
+    } else {
+      // Treat as string (serialized from API)
+      const dateStr = String(todo.date)
+      if (dateStr.includes('T')) {
+        todoDateStr = dateStr.split('T')[0]
+      } else {
+        todoDateStr = dateStr
       }
-      return todo
-    }))
-  }
-
-  const handleAddTodo = (identity: string) => {
-    if (!newTodoText.trim()) return
-    
-    const newTodo: PowerSystemTodo = {
-      id: `${identity}-${Date.now()}`,
-      text: newTodoText.trim(),
-      description: '',
-      xp: 10,
-      identity: identity as 'brain' | 'muscle' | 'money',
-      category: 'general',
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      completedDates: []
     }
     
-    setTodos(prev => [...prev, newTodo])
+    return todoDateStr === today
+  }
+
+  const handleToggleComplete = async (todoId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    
+    const todo = todos.find(t => t.id === todoId)
+    if (!todo) {
+      console.warn('Todo not found:', todoId)
+      return
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    const isCurrentlyCompleted = isCompletedToday(todo)
+    
+    console.log('Toggling todo:', {
+      todoId,
+      title: todo.title,
+      currentCompleted: todo.completed,
+      currentDate: todo.date,
+      isCurrentlyCompleted,
+      today,
+      newCompleted: !isCurrentlyCompleted,
+      newDate: today
+    })
+    
+    try {
+      const result = await updateTodoMutation.mutateAsync({
+        id: todoId,
+        data: { 
+          completed: !isCurrentlyCompleted,
+          date: today
+        }
+      })
+      console.log('Todo updated successfully:', result)
+    } catch (error) {
+      console.error('Error updating todo:', error)
+      // You could add toast notification here
+    }
+  }
+
+  const handleAddTodo = async (identity: string) => {
+    if (!newTodoText.trim()) return
+    
+    await createTodoMutation.mutateAsync({
+      title: newTodoText.trim(),
+      category: identity, // Using category for identity grouping
+      date: new Date().toISOString().split('T')[0]
+    })
+    
     setNewTodoText('')
     setAddingToIdentity(null)
   }
 
-  const handleEditTodo = (todoId: string, newText: string) => {
+  const handleEditTodo = async (todoId: string, newText: string) => {
     if (!newText.trim()) return
     
-    setTodos(prev => prev.map(todo => 
-      todo.id === todoId 
-        ? { ...todo, text: newText.trim(), updatedAt: new Date() }
-        : todo
-    ))
+    await updateTodoMutation.mutateAsync({
+      id: todoId,
+      data: { title: newText.trim() }
+    })
+    
     setEditingTodo(null)
     setEditText('')
   }
 
-  const handleDeleteTodo = (todoId: string) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === todoId 
-        ? { ...todo, isActive: false, updatedAt: new Date() }
-        : todo
-    ))
+  const handleDeleteTodo = async (todoId: string) => {
+    // For now, we'll just mark as completed = false
+    // In a real app, you might want a soft delete
+    await updateTodoMutation.mutateAsync({
+      id: todoId,
+      data: { completed: false }
+    })
   }
 
   const startEditing = (todo: PowerSystemTodo) => {
     setEditingTodo(todo.id)
-    setEditText(todo.text)
+    setEditText(todo.title)
   }
 
   const cancelEditing = () => {
@@ -148,8 +163,14 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
 
   return (
     <div className="glass backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/30 shadow-lg">
-      {/* Header with Progress Tracking */}
-      <div className="mb-6">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-gray-600 dark:text-gray-400">Loading power system...</div>
+        </div>
+      ) : (
+        <>
+          {/* Header with Progress Tracking */}
+          <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
             Power System
@@ -213,7 +234,7 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                   {/* Interactive Goals List */}
                   <div className="space-y-2">
                     {todos
-                      .filter(todo => todo.identity === key && todo.isActive)
+                      .filter(todo => todo.category === key)
                       .map((todo) => {
                         const completedToday = isCompletedToday(todo)
                         const isEditing = editingTodo === todo.id
@@ -257,9 +278,10 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                               "flex items-center gap-3 p-3 rounded-lg transition-all duration-300 goal-item group",
                               !editMode && "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:scale-[1.02] hover:shadow-sm",
                               editMode && "hover:bg-gray-50 dark:hover:bg-gray-800/50 edit-mode",
-                              completedToday && "completed bg-green-50 dark:bg-green-900/20"
+                              completedToday && "completed bg-green-50 dark:bg-green-900/20",
+                              updateTodoMutation.isPending && "opacity-50 pointer-events-none"
                             )}
-                            onClick={!editMode ? () => handleToggleComplete(todo.id) : undefined}
+                            onClick={!editMode ? (e) => handleToggleComplete(todo.id, e) : undefined}
                           >
                             {!editMode ? (
                               <div
@@ -270,10 +292,14 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                                     : "border-2 border-gray-300 dark:border-gray-600 group-hover:border-green-500 dark:group-hover:border-green-500 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 group-hover:scale-110"
                                 )}
                               >
-                                <Check className={cn(
-                                  "w-3 h-3 transition-all duration-300 relative z-10",
-                                  completedToday ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-45"
-                                )} />
+                                {updateTodoMutation.isPending ? (
+                                  <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Check className={cn(
+                                    "w-3 h-3 transition-all duration-300 relative z-10",
+                                    completedToday ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-45"
+                                  )} />
+                                )}
                                 {/* Ripple effect on click */}
                                 <div className={cn(
                                   "absolute inset-0 bg-green-500 rounded-full transition-all duration-500 opacity-0",
@@ -292,7 +318,7 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                                   ? "text-green-700 dark:text-green-300 line-through" 
                                   : "text-gray-800 dark:text-gray-200"
                               )}>
-                                {todo.text}
+                                {todo.title}
                               </span>
                             </div>
                             
@@ -382,6 +408,8 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
           )
         })}
       </div>
+      </>
+      )}
     </div>
   )
 }

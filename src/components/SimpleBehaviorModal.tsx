@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Zap, Brain, Dumbbell, DollarSign, Sparkles } from 'lucide-react'
+import { X, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
-interface BehaviorEntry {
+interface PersonalDataEntry {
   id: string
-  behavior: string
-  identity: 'brain' | 'muscle' | 'money'
-  timestamp: Date
-  xp: number
+  title: string
+  value: string
+  date: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface SimpleBehaviorModalProps {
@@ -19,60 +20,36 @@ interface SimpleBehaviorModalProps {
 }
 
 export function SimpleBehaviorModal({ isOpen, onClose }: SimpleBehaviorModalProps) {
-  const [behavior, setBehavior] = useState('')
-  const [selectedIdentity, setSelectedIdentity] = useState<'brain' | 'muscle' | 'money'>('brain')
+  const [title, setTitle] = useState('')
+  const [value, setValue] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!isOpen) return null
 
   const handleSubmit = async () => {
-    if (!behavior.trim()) return
+    if (!title.trim() || !value.trim()) return
 
     setIsSubmitting(true)
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500))
     
-    // Calculate XP based on behavior complexity
-    const xp = Math.floor(Math.random() * 50) + 25
-    
-    const entry: BehaviorEntry = {
+    const entry: PersonalDataEntry = {
       id: Date.now().toString(),
-      behavior: behavior.trim(),
-      identity: selectedIdentity,
-      timestamp: new Date(),
-      xp
+      title: title.trim(),
+      value: value.trim(),
+      date: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
 
-    console.log('New behavior entry:', entry)
+    console.log('New personal data entry:', entry)
     
-    setBehavior('')
+    setTitle('')
+    setValue('')
     setIsSubmitting(false)
     onClose()
   }
-
-  const identities = [
-    { 
-      id: 'brain' as const, 
-      label: '🧠 Brain', 
-      icon: Brain, 
-      examples: ['Learned new concept', 'Solved problem', 'Read educational content']
-    },
-    { 
-      id: 'muscle' as const, 
-      label: '💪 Muscle', 
-      icon: Dumbbell, 
-      examples: ['Worked out', 'Ate healthy', 'Got good sleep']
-    },
-    { 
-      id: 'money' as const, 
-      label: '💰 Money', 
-      icon: DollarSign, 
-      examples: ['Made money', 'Saved money', 'Invested wisely']
-    }
-  ]
-
-  const selectedIdentityData = identities.find(i => i.id === selectedIdentity)
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -88,7 +65,7 @@ export function SimpleBehaviorModal({ isOpen, onClose }: SimpleBehaviorModalProp
                 Track Yourself
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Quick behavior win
+                Record your progress
               </p>
             </div>
           </div>
@@ -102,82 +79,57 @@ export function SimpleBehaviorModal({ isOpen, onClose }: SimpleBehaviorModalProp
           </Button>
         </div>
 
-        {/* Identity Selection Tabs */}
-        <div className="mb-4">
-          <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
-            {identities.map((identity) => (
-              <button
-                key={identity.id}
-                onClick={() => setSelectedIdentity(identity.id)}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
-                  selectedIdentity === identity.id
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                {identity.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Behavior Buttons */}
+        {/* Title Input */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            What did you do?
+            Heading
           </label>
-          <div className="grid gap-2">
-            {selectedIdentityData?.examples.map((example, index) => (
-              <button
-                key={index}
-                onClick={() => setBehavior(example)}
-                className={`p-3 text-left rounded-lg border-2 transition-all hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                  behavior === example
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {example}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Input */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Or describe your own:
-          </label>
-          <textarea
-            value={behavior}
-            onChange={(e) => setBehavior(e.target.value)}
-            placeholder="What behavior demonstrated your new identity?"
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
-            rows={2}
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter a heading for your entry"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
             maxLength={100}
           />
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {behavior.length}/100 characters
+            {title.length}/100 characters
+          </div>
+        </div>
+
+        {/* Text Input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Description
+          </label>
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Describe what you did or want to track"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
+            rows={4}
+            maxLength={500}
+          />
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {value.length}/500 characters
           </div>
         </div>
 
         {/* Submit Button */}
         <Button
           onClick={handleSubmit}
-          disabled={!behavior.trim() || isSubmitting}
+          disabled={!title.trim() || !value.trim() || isSubmitting}
           className="w-full"
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Recording...
+              Saving...
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Record Behavior (+{Math.floor(Math.random() * 30) + 15} XP)
+              <Sparkles className="w-4 h-4" />
+              Save Entry
             </div>
           )}
         </Button>

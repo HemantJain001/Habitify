@@ -9,7 +9,6 @@ export interface Task {
   id: string
   text: string
   completed: boolean
-  xp: number
   identity: 'brain' | 'muscle' | 'money'
 }
 
@@ -17,7 +16,6 @@ export interface PowerSystemTodo {
   id: string
   text: string
   description?: string
-  xp: number
   identity: 'brain' | 'muscle' | 'money'
   category: string
   isActive: boolean
@@ -45,8 +43,6 @@ export interface IdentityCategory {
 }
 
 export interface UserStats {
-  totalXP: number
-  maxXP: number
   streak: number
   brain: IdentityStats
   muscle: IdentityStats
@@ -93,8 +89,6 @@ export const identityConfig = {
 }
 
 export const mockData: UserStats = {
-  totalXP: 48,
-  maxXP: 100,
   streak: 7,
   brain: {
     today: 23,
@@ -121,35 +115,30 @@ export const mockTasks: Task[] = [
     id: '1',
     text: 'Complete data structures course',
     completed: false,
-    xp: 15,
     identity: 'brain'
   },
   {
     id: '2', 
     text: 'Morning workout - 45 mins',
     completed: true,
-    xp: 20,
     identity: 'muscle'
   },
   {
     id: '3',
     text: 'Review investment portfolio',
     completed: false,
-    xp: 12,
     identity: 'money'
   },
   {
     id: '4',
     text: 'Read 20 pages of "Atomic Habits"',
     completed: false,
-    xp: 8,
     identity: 'brain'
   },
   {
     id: '5',
     text: 'Update freelance client project',
     completed: false,
-    xp: 25,
     identity: 'money'
   }
 ]
@@ -160,7 +149,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'brain-learning-1',
     text: 'Complete React Advanced Patterns Course',
     description: 'Master advanced React patterns including render props, compound components, and custom hooks',
-    xp: 50,
     identity: 'brain',
     category: 'learning',
     isActive: true,
@@ -172,7 +160,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'brain-learning-2',
     text: 'Read "Clean Code" by Robert Martin',
     description: 'Study best practices for writing maintainable and clean code',
-    xp: 40,
     identity: 'brain',
     category: 'learning',
     isActive: true,
@@ -185,7 +172,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'brain-problem-1',
     text: 'Solve 50 LeetCode Medium Problems',
     description: 'Improve algorithmic thinking and problem-solving skills',
-    xp: 75,
     identity: 'brain',
     category: 'problem-solving',
     isActive: true,
@@ -198,7 +184,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'brain-creativity-1',
     text: 'Build a Personal AI Assistant',
     description: 'Create an innovative AI-powered productivity tool',
-    xp: 100,
     identity: 'brain',
     category: 'creativity',
     isActive: true,
@@ -211,7 +196,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'muscle-strength-1',
     text: 'Deadlift 2x Body Weight',
     description: 'Progressive strength training to achieve 2x bodyweight deadlift',
-    xp: 80,
     identity: 'muscle',
     category: 'strength',
     isActive: true,
@@ -224,7 +208,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'muscle-cardio-1',
     text: 'Run a Half Marathon',
     description: 'Build endurance to complete a 21K run',
-    xp: 60,
     identity: 'muscle',
     category: 'cardio',
     isActive: true,
@@ -237,7 +220,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'muscle-wellness-1',
     text: 'Maintain 8-Hour Sleep Schedule',
     description: 'Consistent sleep schedule for optimal recovery and health',
-    xp: 30,
     identity: 'muscle',
     category: 'wellness',
     isActive: true,
@@ -250,7 +232,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'money-income-1',
     text: 'Launch Freelance Development Business',
     description: 'Start generating income through web development services',
-    xp: 120,
     identity: 'money',
     category: 'income',
     isActive: true,
@@ -263,7 +244,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'money-investment-1',
     text: 'Build Emergency Fund (6 months expenses)',
     description: 'Save enough to cover 6 months of living expenses',
-    xp: 90,
     identity: 'money',
     category: 'investment',
     isActive: true,
@@ -276,7 +256,6 @@ export const mockPowerSystemTodos: PowerSystemTodo[] = [
     id: 'money-skills-1',
     text: 'Master Full-Stack Development',
     description: 'Become proficient in both frontend and backend technologies',
-    xp: 100,
     identity: 'money',
     category: 'skills',
     isActive: true,
@@ -294,8 +273,6 @@ export interface JournalEntry {
   dailyWins: string[]
   challenges: string[]
   notes: string
-  gratitude: string[]
-  tomorrowGoals: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -458,7 +435,6 @@ export interface PersonalDataPoint {
   id: string
   title: string
   value: string
-  category: 'identity' | 'skills' | 'goals'
   date: Date
   createdAt: Date
   updatedAt: Date
@@ -470,7 +446,6 @@ export const mockPersonalDataPoints: PersonalDataPoint[] = [
     id: 'data-1',
     title: 'Core Identity',
     value: 'Lifelong learner who thrives on solving complex problems and building meaningful solutions.',
-    category: 'identity',
     date: new Date('2024-01-20'),
     createdAt: new Date('2024-01-20T10:00:00'),
     updatedAt: new Date('2024-01-20T10:00:00')
@@ -479,7 +454,6 @@ export const mockPersonalDataPoints: PersonalDataPoint[] = [
     id: 'data-2',
     title: 'Technical Skills',
     value: 'Full-stack development (React, Node.js, TypeScript), System design, Machine learning basics',
-    category: 'skills',
     date: new Date('2024-01-18'),
     createdAt: new Date('2024-01-18T14:30:00'),
     updatedAt: new Date('2024-01-18T14:30:00')
@@ -488,7 +462,6 @@ export const mockPersonalDataPoints: PersonalDataPoint[] = [
     id: 'data-3',
     title: 'Leadership Style',
     value: 'Direct but empathetic communicator, prefer clear actionable feedback, excel in collaborative environments',
-    category: 'identity',
     date: new Date('2024-01-15'),
     createdAt: new Date('2024-01-15T09:15:00'),
     updatedAt: new Date('2024-01-15T09:15:00')
@@ -497,7 +470,6 @@ export const mockPersonalDataPoints: PersonalDataPoint[] = [
     id: 'data-4',
     title: '5-Year Vision',
     value: 'Leading a tech team while building products that positively impact millions of users',
-    category: 'goals',
     date: new Date('2024-01-12'),
     createdAt: new Date('2024-01-12T16:45:00'),
     updatedAt: new Date('2024-01-12T16:45:00')
@@ -506,7 +478,6 @@ export const mockPersonalDataPoints: PersonalDataPoint[] = [
     id: 'data-5',
     title: 'Problem Solving',
     value: 'Systematic approach to breaking down complex problems into manageable components',
-    category: 'skills',
     date: new Date('2024-01-10'),
     createdAt: new Date('2024-01-10T11:20:00'),
     updatedAt: new Date('2024-01-10T11:20:00')
@@ -523,8 +494,6 @@ export const mockJournalEntries: JournalEntry[] = [
     dailyWins: ['Completed React course module', 'Fixed a challenging bug', 'Had a great workout'],
     challenges: ['Time management with multiple projects', 'Staying focused during meetings'],
     notes: 'Today was particularly good for deep work. I found that blocking out distractions really helped me focus on complex problems.',
-    gratitude: ['Supportive team members', 'Learning opportunities', 'Good health'],
-    tomorrowGoals: ['Start new project', 'Review investment portfolio', 'Morning meditation'],
     createdAt: new Date('2024-01-20T20:00:00'),
     updatedAt: new Date('2024-01-20T20:00:00')
   },
@@ -536,8 +505,6 @@ export const mockJournalEntries: JournalEntry[] = [
     dailyWins: ['Completed workout', 'Had good client call'],
     challenges: ['Woke up late', 'Procrastinated on important tasks'],
     notes: 'Need to establish better boundaries between work and personal time. Also thinking about investing more time in learning new skills.',
-    gratitude: ['Comfortable home', 'Access to resources', 'Family support'],
-    tomorrowGoals: ['Wake up early', 'Focus on priority tasks', 'Read for 30 minutes'],
     createdAt: new Date('2024-01-19T21:30:00'),
     updatedAt: new Date('2024-01-19T21:30:00')
   }
