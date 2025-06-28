@@ -1,32 +1,25 @@
 'use client'
 
-import { BookOpen, LogOut, User } from 'lucide-react'
-import { useSession, signOut } from 'next-auth/react'
+import { BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui'
+import { Button, ProgressBar } from '@/components/ui'
 
 interface TopBarProps {
   streak: number
+  totalXP: number
+  maxXP: number
   onOpenJournal: () => void
 }
 
 interface GreetingSectionProps {
   streak: number
-  userName?: string
 }
 
-function GreetingSection({ streak, userName }: GreetingSectionProps) {
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Good morning"
-    if (hour < 18) return "Good afternoon"
-    return "Good evening"
-  }
-
+function GreetingSection({ streak }: GreetingSectionProps) {
   return (
     <div>
       <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-1">
-        {getGreeting()}, {userName || "Warrior"} 👋
+        Good evening, Warrior 👋
       </h1>
       <div className="flex items-center gap-2">
         <span className="text-lg">🔥</span>
@@ -38,18 +31,46 @@ function GreetingSection({ streak, userName }: GreetingSectionProps) {
   )
 }
 
-export function TopBar({ streak, onOpenJournal }: TopBarProps) {
-  const { data: session } = useSession()
+interface XPSectionProps {
+  totalXP: number
+  maxXP: number
+}
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/auth/signin" })
-  }
+function XPSection({ totalXP, maxXP }: XPSectionProps) {
+  return (
+    <div className="flex items-center gap-4">
+      {/* XP Bar */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-500">⚡</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {totalXP}/{maxXP}
+          </span>
+        </div>
+        <div className="w-24">
+          <ProgressBar
+            value={totalXP}
+            max={maxXP}
+            size="md"
+            variant="default"
+          />
+        </div>
+      </div>
 
+      {/* Profile Icon */}
+      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
+        <span className="text-sm">👤</span>
+      </div>
+    </div>
+  )
+}
+
+export function TopBar({ streak, totalXP, maxXP, onOpenJournal }: TopBarProps) {
   return (
     <header className="glass sticky top-0 z-30 flex items-center justify-between px-8 py-5 backdrop-blur-md border-b border-white/20 dark:border-gray-800/30 shadow-sm">
       {/* Left Side - Greeting & Streak */}
       <div className="flex items-center gap-6">
-        <GreetingSection streak={streak} userName={session?.user?.name || undefined} />
+        <GreetingSection streak={streak} />
       </div>
 
       {/* Center - Journal Button */}
@@ -65,40 +86,8 @@ export function TopBar({ streak, onOpenJournal }: TopBarProps) {
         </Button>
       </div>
 
-      {/* Right Side - Profile */}
-      <div className="flex items-center gap-4">
-        {session?.user ? (
-          <div className="flex items-center gap-2">
-            {/* User Info */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-gray-800/60 rounded-lg backdrop-blur-sm">
-              {session.user.image ? (
-                <img 
-                  src={session.user.image} 
-                  alt="Profile" 
-                  className="w-6 h-6 rounded-full"
-                />
-              ) : (
-                <User className="w-4 h-4" />
-              )}
-              <span className="text-sm font-medium">{session.user.name}</span>
-            </div>
-            
-            {/* Sign Out Button */}
-            <Button
-              onClick={handleSignOut}
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-gray-800/60 rounded-lg backdrop-blur-sm">
-            <span className="text-sm">👤</span>
-          </div>
-        )}
-      </div>
+      {/* Right Side - XP Bar & Profile */}
+      <XPSection totalXP={totalXP} maxXP={maxXP} />
     </header>
   )
 }

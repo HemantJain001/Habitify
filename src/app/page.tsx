@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-import { AuthGuard } from '@/components/AuthGuard'
 import { TopBar } from '@/components/TopBar'
-import { TaskListNew } from '@/components/TaskListNew'
+import { TaskList } from '@/components/TaskList'
 import { PowerSystem } from '@/components/PowerSystem'
+
+
 import { AICoach } from '@/components/AICoach'
 import { BottomControls } from '@/components/BottomControls'
 import { ProblemSolvingModal } from '@/components/ProblemSolvingModal'
@@ -14,28 +16,16 @@ import { SolvedProblemsModal } from '@/components/SolvedProblemsModal'
 import { Sidebar } from '@/components/Sidebar'
 import { CalendarModal } from '@/components/CalendarModal'
 import { DailyJournalModal } from '@/components/DailyJournalModal'
-import { DebugSession } from '@/components/DebugSession'
 
-import { useTasks, useUserStats, usePowerSystemTodos, useCreateTask, useUpdateTask, useDeleteTask } from '@/lib/hooks'
-import type { Task } from '@/lib/api'
-import { useSession } from 'next-auth/react'
+import { mockData, mockTasks, mockPowerSystemTodos, type Task, type PowerSystemTodo } from '@/lib/utils'
 
 export default function Home() {
-  const { data: session, status } = useSession()
-  
-  // API queries - only enabled when user is authenticated
-  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useTasks()
-  const { data: statsData, isLoading: statsLoading } = useUserStats()
-  const { data: powerSystemData, isLoading: powerSystemLoading } = usePowerSystemTodos()
-  
-  // API mutations
-  const createTaskMutation = useCreateTask()
-  const updateTaskMutation = useUpdateTask()
-  const deleteTaskMutation = useDeleteTask()
-
-  // Local state
+  const router = useRouter()
+  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [stats, setStats] = useState(mockData)
   const [darkMode, setDarkMode] = useState(false)
   const [aiCoachOpen, setAiCoachOpen] = useState(false)
+
   const [problemSolvingOpen, setProblemSolvingOpen] = useState(false)
   const [quickTrackYourselfOpen, setQuickTrackYourselfOpen] = useState(false)
   const [solvedProblemsOpen, setSolvedProblemsOpen] = useState(false)
@@ -43,11 +33,6 @@ export default function Home() {
   const [journalModalOpen, setJournalModalOpen] = useState(false)
   const [selectedJournalDate, setSelectedJournalDate] = useState<Date | undefined>(undefined)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-  // Extract data from API responses
-  const tasks = tasksData?.tasks || []
-  const stats = statsData || { streak: 0, brain: { today: 0, week: 0, month: 0, progress: 0 }, muscle: { today: 0, week: 0, month: 0, progress: 0 }, money: { today: 0, week: 0, month: 0, progress: 0 } }
-  const powerSystemTodos = powerSystemData?.powerSystemTodos || []
 
 
 
@@ -60,31 +45,59 @@ export default function Home() {
     }
   }, [darkMode])
 
-  const handleTaskToggle = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId)
-    if (task) {
-      await updateTaskMutation.mutateAsync({
-        id: taskId,
-        data: { completed: !task.completed }
-      })
+  const handleTaskToggle = (taskId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const updated = { ...task, completed: !task.completed }
+        
+        // Update stats when task is completed
+        if (updated.completed && !task.completed) {
+          setStats(prevStats => ({
+            ...prevStats,
+            totalXP: prevStats.totalXP + task.xp,
+            [task.identity]: {
+              ...prevStats[task.identity],
+              today: prevStats[task.identity].today + task.xp,
+              week: prevStats[task.identity].week + task.xp
+            }
+          }))
+        } else if (!updated.completed && task.completed) {
+          // Subtract XP when task is uncompleted
+          setStats(prevStats => ({
+            ...prevStats,
+            totalXP: Math.max(0, prevStats.totalXP - task.xp),
+            [task.identity]: {
+              ...prevStats[task.identity],
+              today: Math.max(0, prevStats[task.identity].today - task.xp),
+              week: Math.max(0, prevStats[task.identity].week - task.xp)
+            }
+          }))
+        }
+        
+        return updated
+      }
+      return task
+    }))
+  }
+
+  const handleAddTask = (newTask: Omit<Task, 'id'>) => {
+    const task: Task = {
+      ...newTask,
+      id: Date.now().toString()
     }
+    setTasks(prev => [...prev, task])
   }
 
-  const handleAddTask = async (newTaskData: { title: string }) => {
-    await createTaskMutation.mutateAsync({
-      title: newTaskData.title
-    })
+  const handleEditTask = (taskId: string, updatedTask: Omit<Task, 'id'>) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, ...updatedTask }
+        : task
+    ))
   }
 
-  const handleEditTask = async (taskId: string, updatedTaskData: { title: string }) => {
-    await updateTaskMutation.mutateAsync({
-      id: taskId,
-      data: { title: updatedTaskData.title }
-    })
-  }
-
-  const handleDeleteTask = async (taskId: string) => {
-    await deleteTaskMutation.mutateAsync(taskId)
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId))
   }
 
   const handleOpenJournal = (date?: Date) => {
@@ -93,12 +106,11 @@ export default function Home() {
   }
 
   const handleOpenSolvedProblems = () => {
-    setSolvedProblemsOpen(true)
+    router.push('/solved-problems')
   }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
       {/* Sidebar */}
       <Sidebar 
         onOpenCalendar={() => setCalendarModalOpen(true)}
@@ -114,14 +126,13 @@ export default function Home() {
         {/* Top Bar */}
         <TopBar 
           streak={stats.streak}
+          totalXP={stats.totalXP}
+          maxXP={stats.maxXP}
           onOpenJournal={() => handleOpenJournal()}
         />
 
         {/* Main Content Grid */}
         <div className="p-8 max-w-[1200px] mx-auto">
-          {/* Debug Session - Remove in production */}
-          <DebugSession />
-          
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
@@ -136,37 +147,22 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* First Section - Today's Actions */}
             <div>
-              {tasksError ? (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-red-600 dark:text-red-400">
-                    Error loading tasks: {tasksError.message}
-                  </p>
-                </div>
-              ) : (
-                <TaskListNew 
-                  tasks={tasks}
-                  isLoading={tasksLoading}
-                  onTaskToggle={handleTaskToggle}
-                  onAddTask={handleAddTask}
-                  onEditTask={handleEditTask}
-                  onDeleteTask={handleDeleteTask}
-                />
-              )}
+              <TaskList 
+                tasks={tasks}
+                onTaskToggle={handleTaskToggle}
+                onAddTask={handleAddTask}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+              />
             </div>
             
             {/* Second Section - Power System */}
             <div>
-              {statsLoading ? (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-gray-600 dark:text-gray-400">Loading power system...</p>
-                </div>
-              ) : (
-                <PowerSystem 
-                  brain={stats.brain}
-                  muscle={stats.muscle}
-                  money={stats.money}
-                />
-              )}
+              <PowerSystem 
+                brain={stats.brain}
+                muscle={stats.muscle}
+                money={stats.money}
+              />
             </div>
           </div>
         </div>
@@ -194,7 +190,7 @@ export default function Home() {
         isOpen={calendarModalOpen}
         onClose={() => setCalendarModalOpen(false)}
         onOpenJournal={handleOpenJournal}
-        powerSystemTodos={[]}
+        powerSystemTodos={mockPowerSystemTodos}
       />
 
       <DailyJournalModal 
@@ -204,7 +200,7 @@ export default function Home() {
           setSelectedJournalDate(undefined)
         }}
         selectedDate={selectedJournalDate}
-        powerSystemTodos={[]}
+        powerSystemTodos={mockPowerSystemTodos}
       />
 
       <SolvedProblemsModal 
@@ -218,6 +214,5 @@ export default function Home() {
       />
       </div>
     </div>
-    </AuthGuard>
   )
 }
