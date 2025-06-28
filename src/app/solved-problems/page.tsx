@@ -89,7 +89,6 @@ export default function SolvedProblemsPage() {
         onOpenTrackYourself={() => setTrackYourselfOpen(true)}
         onOpenJournal={() => setJournalOpen(true)}
         onOpenSolvedProblems={() => {}}
-        onOpenDashboard={() => window.location.href = '/'}
         onCollapseChange={setSidebarCollapsed}
       />
 

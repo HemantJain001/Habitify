@@ -9,7 +9,6 @@ interface SidebarProps {
   onOpenTrackYourself?: () => void
   onOpenJournal?: () => void
   onOpenSolvedProblems?: () => void
-  onOpenDashboard?: () => void
   onCollapseChange?: (collapsed: boolean) => void
 }
 
@@ -40,7 +39,7 @@ function SidebarButton({ onClick, icon, label, title, isCollapsed }: SidebarButt
   )
 }
 
-export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYourself, onOpenJournal, onOpenSolvedProblems, onOpenDashboard, onCollapseChange }: SidebarProps) {
+export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYourself, onOpenJournal, onOpenSolvedProblems, onCollapseChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleToggleCollapse = () => {
@@ -77,14 +76,6 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYours
 
       {/* Menu Items */}
       <div className="flex-1 p-3 space-y-1 overflow-y-auto">
-        <SidebarButton
-          onClick={onOpenDashboard}
-          icon="🏠"
-          label="Dashboard"
-          title="Dashboard"
-          isCollapsed={isCollapsed}
-        />
-
         <SidebarButton
           onClick={onOpenCalendar}
           icon="📅"

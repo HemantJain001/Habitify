@@ -109,11 +109,6 @@ export default function Home() {
     router.push('/solved-problems')
   }
 
-  const handleOpenDashboard = () => {
-    // Since dashboard is unified with home page, just scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-[#191919] dark:to-gray-900 transition-all duration-500">
       {/* Sidebar */}
@@ -123,7 +118,6 @@ export default function Home() {
         onOpenTrackYourself={() => setQuickTrackYourselfOpen(true)}
         onOpenJournal={() => handleOpenJournal()}
         onOpenSolvedProblems={handleOpenSolvedProblems}
-        onOpenDashboard={handleOpenDashboard}
         onCollapseChange={setSidebarCollapsed}
       />
 
