@@ -150,6 +150,14 @@ export function Sidebar({ onOpenDashboard, onOpenCalendar, onOpenProblemSolving,
           title="Behavior History"
           isCollapsed={isCollapsed}
         />
+
+        <SidebarButton
+          href="/stats"
+          icon="📈"
+          label="Statistics"
+          title="Statistics Dashboard"
+          isCollapsed={isCollapsed}
+        />
       </div>
     </div>
   )
