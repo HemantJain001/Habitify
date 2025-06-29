@@ -34,6 +34,13 @@ export default function RootLayout({
             {children}
           </AuthProvider>
         </Providers>
+        
+        {/* OmniDimension Voice AI Widget */}
+        <script 
+          id="omnidimension-web-widget" 
+          async 
+          src="https://backend.omnidim.io/web_widget.js?secret_key=5a648d023a32bb89dad2f8036e103d97"
+        ></script>
       </body>
     </html>
   );
