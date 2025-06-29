@@ -1,18 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Sparkles } from 'lucide-react'
+import { X, Sparkles, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-
-interface PersonalDataEntry {
-  id: string
-  title: string
-  value: string
-  date: Date
-  createdAt: Date
-  updatedAt: Date
-}
+import { useCreateBehavior } from '@/lib/hooks'
 
 interface SimpleBehaviorModalProps {
   isOpen: boolean
@@ -22,33 +14,57 @@ interface SimpleBehaviorModalProps {
 export function SimpleBehaviorModal({ isOpen, onClose }: SimpleBehaviorModalProps) {
   const [title, setTitle] = useState('')
   const [value, setValue] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const createBehaviorMutation = useCreateBehavior()
 
   if (!isOpen) return null
 
   const handleSubmit = async () => {
     if (!title.trim() || !value.trim()) return
 
-    setIsSubmitting(true)
+    setError(null)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const entry: PersonalDataEntry = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      value: value.trim(),
-      date: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
+    try {
+      await createBehaviorMutation.mutateAsync({
+        title: title.trim(),
+        value: value.trim()
+      })
 
-    console.log('New personal data entry:', entry)
-    
-    setTitle('')
-    setValue('')
-    setIsSubmitting(false)
-    onClose()
+      // Show success state
+      setShowSuccess(true)
+      
+      // Reset form
+      setTitle('')
+      setValue('')
+      
+      // Close modal after showing success briefly
+      setTimeout(() => {
+        setShowSuccess(false)
+        onClose()
+      }, 1500)
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save entry')
+    }
+  }
+
+  // Success state
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <Card className="w-full max-w-md p-8 animate-in zoom-in-95 duration-200 text-center">
+          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Entry Saved!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Your progress has been tracked successfully.
+          </p>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -115,13 +131,21 @@ export function SimpleBehaviorModal({ isOpen, onClose }: SimpleBehaviorModalProp
           </div>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          </div>
+        )}
+
         {/* Submit Button */}
         <Button
           onClick={handleSubmit}
-          disabled={!title.trim() || !value.trim() || isSubmitting}
+          disabled={!title.trim() || !value.trim() || createBehaviorMutation.isPending}
           className="w-full"
         >
-          {isSubmitting ? (
+          {createBehaviorMutation.isPending ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Saving...

@@ -1,7 +1,8 @@
 'use client'
 
-import { BookOpen, LogOut, User } from 'lucide-react'
+import { BookOpen, LogOut, User, TrendingUp, Brain } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 
@@ -52,8 +53,8 @@ export function TopBar({ streak, onOpenJournal }: TopBarProps) {
         <GreetingSection streak={streak} userName={session?.user?.name || undefined} />
       </div>
 
-      {/* Center - Journal Button */}
-      <div className="flex items-center gap-2">
+      {/* Center - Action Buttons */}
+      <div className="flex items-center gap-3">
         <Button
           onClick={onOpenJournal}
           variant="primary"
@@ -63,6 +64,28 @@ export function TopBar({ streak, onOpenJournal }: TopBarProps) {
           <BookOpen className="w-4 h-4 mr-2" />
           Journal
         </Button>
+        
+        <Link href="/behavior-history">
+          <Button
+            variant="secondary"
+            size="md"
+            className="hover:bg-purple-50 dark:hover:bg-purple-900/20"
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            History
+          </Button>
+        </Link>
+        
+        <Link href="/solved-problems">
+          <Button
+            variant="secondary"
+            size="md"
+            className="hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Problems
+          </Button>
+        </Link>
       </div>
 
       {/* Right Side - Profile */}

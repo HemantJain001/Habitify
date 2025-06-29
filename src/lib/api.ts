@@ -147,6 +147,10 @@ export const problemApi = {
     )
   },
   
+  // Get a specific problem entry
+  getProblem: (id: string) =>
+    apiRequest<{ problemEntry: ProblemSolvingEntry }>(`/problems/${id}`),
+  
   // Create problem entry
   createProblem: (data: {
     problemBehavior: string
@@ -168,6 +172,35 @@ export const problemApi = {
     apiRequest<{ problemEntry: ProblemSolvingEntry }>('/problems', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+  
+  // Update problem entry
+  updateProblem: (id: string, data: {
+    problemBehavior?: string
+    triggerPattern?: string
+    isDaily?: boolean
+    preventiveStrategy?: string
+    wrongPathReaction?: string
+    longTermConsequence?: string
+    preferredBehavior?: string
+    positiveOutcome?: string
+    problemCategory?: string
+    emotionalImpact?: number
+    copingStrategy?: string
+    controlSource?: string
+    actionablePower?: string
+    longTermSolution?: string
+    isPinned?: boolean
+  }) =>
+    apiRequest<{ problemEntry: ProblemSolvingEntry }>(`/problems/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  
+  // Delete problem entry
+  deleteProblem: (id: string) =>
+    apiRequest<{ success: boolean }>(`/problems/${id}`, {
+      method: 'DELETE',
     }),
 }
 

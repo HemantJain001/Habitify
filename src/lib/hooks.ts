@@ -50,10 +50,11 @@ export function useDeleteTask() {
 }
 
 // Power System hooks
-export function usePowerSystemTodos(params?: { category?: string; date?: string }) {
+export function usePowerSystemTodos(params?: { category?: string; date?: string; enabled?: boolean }) {
   return useQuery({
     queryKey: ['power-system-todos', params],
     queryFn: () => powerSystemApi.getPowerSystemTodos(params),
+    enabled: params?.enabled !== false,
   })
 }
 
@@ -268,11 +269,43 @@ export function useProblems(params?: { category?: string; limit?: number }) {
   })
 }
 
+export function useProblem(id: string) {
+  return useQuery({
+    queryKey: ['problems', id],
+    queryFn: () => problemApi.getProblem(id),
+    enabled: !!id,
+  })
+}
+
 export function useCreateProblem() {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: problemApi.createProblem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['problems'] })
+      queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+    },
+  })
+}
+
+export function useUpdateProblem() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof problemApi.updateProblem>[1] }) =>
+      problemApi.updateProblem(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['problems'] })
+    },
+  })
+}
+
+export function useDeleteProblem() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: problemApi.deleteProblem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['problems'] })
       queryClient.invalidateQueries({ queryKey: ['user-stats'] })
@@ -295,6 +328,45 @@ export function useCreateBehavior() {
     mutationFn: behaviorApi.createBehavior,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['behaviors'] })
+    },
+  })
+}
+
+export function useDeletePowerSystemTodo() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (id: string) => powerSystemApi.deletePowerSystemTodo(id),
+    onMutate: async (id) => {
+      // Cancel queries to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: ['power-system-todos'] })
+      
+      // Get current data
+      const previousTodos = queryClient.getQueryData(['power-system-todos'])
+      
+      // Optimistically remove the todo
+      queryClient.setQueryData(['power-system-todos'], (old: any) => {
+        if (!old?.powerSystemTodos) return old
+        
+        return {
+          ...old,
+          powerSystemTodos: old.powerSystemTodos.filter((todo: any) => todo.id !== id)
+        }
+      })
+      
+      return { previousTodos, todoId: id }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousTodos) {
+        queryClient.setQueryData(['power-system-todos'], context.previousTodos)
+      }
+      console.error(`Failed to delete todo ${context?.todoId}:`, err)
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['power-system-todos'] })
+      queryClient.invalidateQueries({ queryKey: ['user-stats'] })
     },
   })
 }

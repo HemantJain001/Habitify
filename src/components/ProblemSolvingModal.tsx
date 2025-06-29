@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { X, AlertCircle, Brain, Target, Heart, Power, ChevronRight, ChevronLeft, Save, Clock, CheckCircle } from 'lucide-react'
-import { cn, type ProblemSolvingEntry, mockProblemSolvingEntries } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { useCreateProblem } from '@/lib/hooks'
 
 interface ProblemSolvingModalProps {
   isOpen: boolean
@@ -11,25 +12,22 @@ interface ProblemSolvingModalProps {
 
 export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProps) {
   const [currentSection, setCurrentSection] = useState(0)
-  const [problemEntries, setProblemEntries] = useState<ProblemSolvingEntry[]>(mockProblemSolvingEntries)
-  const [isAutoSaving, setIsAutoSaving] = useState(false)
+  const createProblem = useCreateProblem()
   
-  // Form state
-  const [title, setTitle] = useState('')
-  const [wrongThing, setWrongThing] = useState('')
-  const [trigger, setTrigger] = useState('')
+  // Form state using database field names
+  const [problemBehavior, setProblemBehavior] = useState('')
+  const [triggerPattern, setTriggerPattern] = useState('')
   const [isDaily, setIsDaily] = useState(false)
-  const [avoidTrigger, setAvoidTrigger] = useState('')
-  const [onceStarted, setOnceStarted] = useState('')
-  const [longTermImpact, setLongTermImpact] = useState('')
-  const [shouldDoInstead, setShouldDoInstead] = useState('')
-  const [benefits, setBenefits] = useState('')
-  const [problemNature, setProblemNature] = useState('')
+  const [preventiveStrategy, setPreventiveStrategy] = useState('')
+  const [wrongPathReaction, setWrongPathReaction] = useState('')
+  const [longTermConsequence, setLongTermConsequence] = useState('')
+  const [preferredBehavior, setPreferredBehavior] = useState('')
+  const [positiveOutcome, setPositiveOutcome] = useState('')
+  const [problemCategory, setProblemCategory] = useState('general')
   const [emotionalImpact, setEmotionalImpact] = useState(50)
-  const [hasStrategy, setHasStrategy] = useState(false)
-  const [strategy, setStrategy] = useState('')
-  const [hasPower, setHasPower] = useState(true)
-  const [powerToChange, setPowerToChange] = useState('')
+  const [copingStrategy, setCopingStrategy] = useState('')
+  const [controlSource, setControlSource] = useState('')
+  const [actionablePower, setActionablePower] = useState('')
   const [longTermSolution, setLongTermSolution] = useState('')
 
   const sections = [
@@ -60,63 +58,58 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
   ]
 
   const handleSave = async () => {
-    setIsAutoSaving(true)
-    
-    // Simulate auto-save delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const newEntry: ProblemSolvingEntry = {
-      id: `problem-${Date.now()}`,
-      title: title || 'Untitled Problem',
-      date: new Date(),
-      wrongThing,
-      trigger,
-      isDaily,
-      avoidTrigger,
-      onceStarted,
-      longTermImpact,
-      shouldDoInstead,
-      benefits,
-      problemNature,
-      emotionalImpact,
-      hasStrategy,
-      strategy,
-      hasPower,
-      powerToChange,
-      longTermSolution,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    if (!problemBehavior.trim() || !triggerPattern.trim()) {
+      alert('Problem behavior and trigger pattern are required')
+      return
     }
 
-    setProblemEntries(prev => [...prev, newEntry])
-    setIsAutoSaving(false)
-    resetForm()
-    onClose()
+    try {
+      await createProblem.mutateAsync({
+        problemBehavior,
+        triggerPattern,
+        isDaily,
+        preventiveStrategy: preventiveStrategy || undefined,
+        wrongPathReaction,
+        longTermConsequence,
+        preferredBehavior,
+        positiveOutcome,
+        problemCategory,
+        emotionalImpact,
+        copingStrategy: copingStrategy || undefined,
+        controlSource,
+        actionablePower: actionablePower || undefined,
+        longTermSolution: longTermSolution || undefined,
+      })
+      
+      resetForm()
+      onClose()
+    } catch (error) {
+      console.error('Failed to save problem:', error)
+      alert('Failed to save problem. Please try again.')
+    }
   }
 
   const resetForm = () => {
     setCurrentSection(0)
-    setTitle('')
-    setWrongThing('')
-    setTrigger('')
+    setProblemBehavior('')
+    setTriggerPattern('')
     setIsDaily(false)
-    setAvoidTrigger('')
-    setOnceStarted('')
-    setLongTermImpact('')
-    setShouldDoInstead('')
-    setBenefits('')
-    setProblemNature('')
+    setPreventiveStrategy('')
+    setWrongPathReaction('')
+    setLongTermConsequence('')
+    setPreferredBehavior('')
+    setPositiveOutcome('')
+    setProblemCategory('general')
     setEmotionalImpact(50)
-    setHasStrategy(false)
-    setStrategy('')
-    setHasPower(true)
-    setPowerToChange('')
+    setCopingStrategy('')
+    setControlSource('')
+    setActionablePower('')
     setLongTermSolution('')
   }
 
   const handleAutoSaveAndClose = () => {
     // Auto-save if there's meaningful content
-    if (title.trim() || wrongThing.trim() || trigger.trim()) {
+    if (problemBehavior.trim() || triggerPattern.trim()) {
       handleSave()
     } else {
       resetForm()
@@ -175,8 +168,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What wrong thing am I doing?
               </label>
               <textarea
-                value={wrongThing}
-                onChange={(e) => setWrongThing(e.target.value)}
+                value={problemBehavior}
+                onChange={(e) => setProblemBehavior(e.target.value)}
                 placeholder="Describe the specific behavior or action that's problematic..."
                 rows={3}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -188,8 +181,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What triggers this behavior?
               </label>
               <textarea
-                value={trigger}
-                onChange={(e) => setTrigger(e.target.value)}
+                value={triggerPattern}
+                onChange={(e) => setTriggerPattern(e.target.value)}
                 placeholder="What situations, emotions, or thoughts lead to this behavior?"
                 rows={3}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -214,8 +207,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 How can I avoid the trigger?
               </label>
               <textarea
-                value={avoidTrigger}
-                onChange={(e) => setAvoidTrigger(e.target.value)}
+                value={preventiveStrategy}
+                onChange={(e) => setPreventiveStrategy(e.target.value)}
                 placeholder="What preventive measures can you take to avoid the trigger?"
                 rows={3}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -227,8 +220,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 Once I've started, how do I stop?
               </label>
               <textarea
-                value={onceStarted}
-                onChange={(e) => setOnceStarted(e.target.value)}
+                value={wrongPathReaction}
+                onChange={(e) => setWrongPathReaction(e.target.value)}
                 placeholder="What strategies can help you break the pattern once it's begun?"
                 rows={3}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -240,8 +233,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What are the long-term consequences of this behavior?
               </label>
               <textarea
-                value={longTermImpact}
-                onChange={(e) => setLongTermImpact(e.target.value)}
+                value={longTermConsequence}
+                onChange={(e) => setLongTermConsequence(e.target.value)}
                 placeholder="How does this behavior affect your goals, relationships, and well-being over time?"
                 rows={3}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -267,8 +260,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What should I do instead?
               </label>
               <textarea
-                value={shouldDoInstead}
-                onChange={(e) => setShouldDoInstead(e.target.value)}
+                value={preferredBehavior}
+                onChange={(e) => setPreferredBehavior(e.target.value)}
                 placeholder="What specific positive behaviors can replace the problematic ones?"
                 rows={4}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -280,8 +273,8 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What are the benefits of changing this behavior?
               </label>
               <textarea
-                value={benefits}
-                onChange={(e) => setBenefits(e.target.value)}
+                value={positiveOutcome}
+                onChange={(e) => setPositiveOutcome(e.target.value)}
                 placeholder="How will changing this behavior improve your life? What will you gain?"
                 rows={4}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -307,11 +300,11 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
                 What is the nature of this problem?
               </label>
               <select
-                value={problemNature}
-                onChange={(e) => setProblemNature(e.target.value)}
+                value={problemCategory}
+                onChange={(e) => setProblemCategory(e.target.value)}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
-                <option value="">Select problem type</option>
+                <option value="general">General</option>
                 <option value="Emotional/Behavioral">Emotional/Behavioral</option>
                 <option value="Practical/External">Practical/External</option>
                 <option value="Relationship">Relationship</option>
@@ -343,33 +336,18 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="hasStrategy"
-                checked={hasStrategy}
-                onChange={(e) => setHasStrategy(e.target.checked)}
-                className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <label htmlFor="hasStrategy" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                I have a strategy to deal with the emotional impact
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                How do you cope with the emotional impact?
               </label>
+              <textarea
+                value={copingStrategy}
+                onChange={(e) => setCopingStrategy(e.target.value)}
+                placeholder="What techniques, habits, or approaches help you manage the emotional impact?"
+                rows={4}
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              />
             </div>
-
-            {hasStrategy && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Describe your coping strategy
-                </label>
-                <textarea
-                  value={strategy}
-                  onChange={(e) => setStrategy(e.target.value)}
-                  placeholder="What techniques, habits, or approaches help you manage the emotional impact?"
-                  rows={4}
-                  className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                />
-              </div>
-            )}
           </div>
         )
 
@@ -385,27 +363,27 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="hasPower"
-                checked={hasPower}
-                onChange={(e) => setHasPower(e.target.checked)}
-                className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <label htmlFor="hasPower" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                I have the power to change this situation
-              </label>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 What specifically can you change or control?
               </label>
               <textarea
-                value={powerToChange}
-                onChange={(e) => setPowerToChange(e.target.value)}
+                value={controlSource}
+                onChange={(e) => setControlSource(e.target.value)}
                 placeholder="List the specific aspects of this situation that are within your control..."
+                rows={4}
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                What actionable power do you have?
+              </label>
+              <textarea
+                value={actionablePower}
+                onChange={(e) => setActionablePower(e.target.value)}
+                placeholder="Describe the specific actions you can take to address this problem..."
                 rows={4}
                 className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               />
@@ -455,7 +433,7 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isAutoSaving && (
+            {createProblem.isPending && (
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <Clock className="w-4 h-4 animate-spin" />
                 <span>Saving...</span>
@@ -513,20 +491,6 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
-          {/* Problem Title */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Problem Title *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Give this problem a descriptive title..."
-              className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
           {/* Section Content */}
           {renderSectionContent()}
         </div>
@@ -548,7 +512,7 @@ export function ProblemSolvingModal({ isOpen, onClose }: ProblemSolvingModalProp
             </button>
             <button
               onClick={handleSave}
-              disabled={!title.trim()}
+              disabled={!problemBehavior.trim() || !triggerPattern.trim() || createProblem.isPending}
               className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
             >
               <Save className="w-4 h-4" />

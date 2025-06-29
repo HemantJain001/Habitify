@@ -40,10 +40,37 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
+    console.log("Session data:", {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email
+    })
+    
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
+      )
+    }
+
+    // Verify user exists in database
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, email: true }
+    })
+
+    console.log("User exists check:", {
+      sessionUserId: session.user.id,
+      userExists: !!userExists,
+      userData: userExists
+    })
+
+    if (!userExists) {
+      console.error("User not found in database:", session.user.id)
+      return NextResponse.json(
+        { error: "User not found. Please log in again." },
+        { status: 404 }
       )
     }
 
@@ -62,6 +89,12 @@ export async function POST(request: NextRequest) {
         completed: false,
         userId: session.user.id,
       }
+    })
+
+    console.log("Task created successfully:", {
+      taskId: task.id,
+      userId: task.userId,
+      title: task.title
     })
 
     return NextResponse.json({ task }, { status: 201 })

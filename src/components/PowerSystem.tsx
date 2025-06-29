@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { ChevronDown, Plus, Save, X, Edit3 } from 'lucide-react'
-import { cn, type IdentityStats, identityConfig, type ViewPeriod } from '@/lib/utils'
-import { usePowerSystemTodos, useCreatePowerSystemTodo, useUpdatePowerSystemTodo } from '@/lib/hooks'
+import { cn, type IdentityStats, identityConfig, type ViewPeriod, isCompletedToday } from '@/lib/utils'
+import { usePowerSystemTodos, useCreatePowerSystemTodo, useUpdatePowerSystemTodo, useDeletePowerSystemTodo } from '@/lib/hooks'
 import type { PowerSystemTodo } from '@/lib/api'
 import PowerSystemTodoItem from './PowerSystemTodoItem'
 
@@ -11,18 +11,32 @@ interface PowerSystemProps {
   brain: IdentityStats
   muscle: IdentityStats
   money: IdentityStats
+  todos?: PowerSystemTodo[]
 }
 
-export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
+export function PowerSystem({ brain, muscle, money, todos: propTodos }: PowerSystemProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [viewPeriod, setViewPeriod] = useState<ViewPeriod>('weekly')
   
-  // API hooks
-  const { data: powerSystemData, isLoading } = usePowerSystemTodos()
+  // API hooks - only fetch data if not provided as props
+  const { data: powerSystemData, isLoading } = usePowerSystemTodos(
+    propTodos ? { enabled: false } : {}
+  )
   const createTodoMutation = useCreatePowerSystemTodo()
   const updateTodoMutation = useUpdatePowerSystemTodo()
+  const deleteTodoMutation = useDeletePowerSystemTodo()
   
-  const todos = powerSystemData?.powerSystemTodos || []
+  const todos = propTodos || powerSystemData?.powerSystemTodos || []
+  
+  // Debug: Log the todos to see what we're getting
+  console.log('PowerSystem component debug:', {
+    propTodosLength: propTodos?.length || 0,
+    propTodos: propTodos,
+    apiDataLength: powerSystemData?.powerSystemTodos?.length || 0,
+    finalTodosLength: todos.length,
+    usingProps: !!propTodos,
+    isLoading
+  })
   const [editMode, setEditMode] = useState(false)
   const [editingTodo, setEditingTodo] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -45,7 +59,6 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
   }, [todos])
 
   const getCompletedTodayCount = useCallback((identity: string) => {
-    const today = new Date().toISOString().split('T')[0]
     return todos
       .filter(todo => todo.category === identity)
       .filter(todo => isCompletedToday(todo)).length
@@ -59,28 +72,6 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
       money: todos.filter(todo => todo.category === 'money')
     }
   }, [todos])
-
-  const isCompletedToday = (todo: PowerSystemTodo) => {
-    if (!todo.completed) return false
-    
-    const today = new Date().toISOString().split('T')[0]
-    let todoDateStr = ''
-    
-    // Handle both string and Date types for the date field
-    if (todo.date instanceof Date) {
-      todoDateStr = todo.date.toISOString().split('T')[0]
-    } else {
-      // Treat as string (serialized from API)
-      const dateStr = String(todo.date)
-      if (dateStr.includes('T')) {
-        todoDateStr = dateStr.split('T')[0]
-      } else {
-        todoDateStr = dateStr
-      }
-    }
-    
-    return todoDateStr === today
-  }
 
   const handleToggleComplete = useCallback(async (todoId: string, event?: React.MouseEvent) => {
     if (event) {
@@ -131,25 +122,60 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
   }, [newTodoText, createTodoMutation])
 
   const handleEditTodo = useCallback(async (todoId: string, newText: string) => {
-    if (!newText.trim()) return
+    console.log('🔧 handleEditTodo called:', { todoId, newText })
+    if (!newText.trim()) {
+      console.log('❌ Edit cancelled: empty text')
+      return
+    }
     
-    await updateTodoMutation.mutateAsync({
-      id: todoId,
-      data: { title: newText.trim() }
-    })
-    
-    setEditingTodo(null)
-    setEditText('')
+    try {
+      console.log('📤 Sending edit request...')
+      const result = await updateTodoMutation.mutateAsync({
+        id: todoId,
+        data: { title: newText.trim() }
+      })
+      console.log('✅ Edit successful:', result)
+      
+      setEditingTodo(null)
+      setEditText('')
+    } catch (error) {
+      console.error('❌ Edit failed:', error)
+      // Show user-friendly error
+      if (error instanceof Error && error.message.includes('401')) {
+        alert('Authentication required. Please sign in and try again.')
+      } else {
+        alert('Failed to update todo. Please try again.')
+      }
+    }
   }, [updateTodoMutation])
 
   const handleDeleteTodo = useCallback(async (todoId: string) => {
-    await updateTodoMutation.mutateAsync({
-      id: todoId,
-      data: { completed: false }
-    })
-  }, [updateTodoMutation])
+    console.log('🗑️ handleDeleteTodo called:', { todoId })
+    
+    // Add confirmation dialog
+    const confirmed = confirm('Are you sure you want to delete this todo?')
+    if (!confirmed) {
+      console.log('❌ Delete cancelled by user')
+      return
+    }
+    
+    try {
+      console.log('📤 Sending delete request...')
+      const result = await deleteTodoMutation.mutateAsync(todoId)
+      console.log('✅ Delete successful:', result)
+    } catch (error) {
+      console.error('❌ Delete failed:', error)
+      // Show user-friendly error
+      if (error instanceof Error && error.message.includes('401')) {
+        alert('Authentication required. Please sign in and try again.')
+      } else {
+        alert('Failed to delete todo. Please try again.')
+      }
+    }
+  }, [deleteTodoMutation])
 
   const startEditing = useCallback((todo: PowerSystemTodo) => {
+    console.log('✏️ startEditing called:', { todoId: todo.id, todoTitle: todo.title })
     setEditingTodo(todo.id)
     setEditText(todo.title)
   }, [])
@@ -180,7 +206,11 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
           </h2>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setEditMode(!editMode)}
+              onClick={() => {
+                console.log('🎛️ Edit Goals button clicked, current editMode:', editMode)
+                setEditMode(!editMode)
+                console.log('🎛️ Edit mode will be:', !editMode)
+              }}
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
                 editMode
@@ -243,7 +273,7 @@ export function PowerSystem({ brain, muscle, money }: PowerSystemProps) {
                         editMode={editMode}
                         isEditing={editingTodo === todo.id}
                         editText={editText}
-                        isLoading={updateTodoMutation.isPending}
+                        isLoading={updateTodoMutation.isPending || deleteTodoMutation.isPending}
                         onToggleComplete={handleToggleComplete}
                         onStartEditing={startEditing}
                         onEditTodo={handleEditTodo}

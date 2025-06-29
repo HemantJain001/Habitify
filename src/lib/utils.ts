@@ -287,147 +287,132 @@ export interface NotificationSetting {
 
 export interface ProblemSolvingEntry {
   id: string
-  title: string
-  date: Date
-  
-  // Pattern Analysis
-  wrongThing: string
-  trigger: string
+  problemBehavior: string      // What wrong thing am I doing?
+  triggerPattern: string       // What triggers this behavior?
   isDaily: boolean
-  avoidTrigger: string
-  onceStarted: string
-  longTermImpact: string
-  
-  // Solution Development
-  shouldDoInstead: string
-  benefits: string
-  
-  // Problem Nature & Emotional Impact
-  problemNature: string
-  emotionalImpact: number // percentage 0-100
-  hasStrategy: boolean
-  strategy: string
-  
-  // Power & Control
-  hasPower: boolean
-  powerToChange: string
-  longTermSolution: string
-  
+  preventiveStrategy?: string  // How can I avoid the trigger?
+  wrongPathReaction: string    // Once I've started, how do I stop?
+  longTermConsequence: string  // What are the long-term consequences?
+  preferredBehavior: string    // What should I do instead?
+  positiveOutcome: string      // What are the benefits of changing?
+  problemCategory: string      // What is the nature of this problem?
+  emotionalImpact: number      // Emotional impact level (0-100)
+  copingStrategy?: string      // Strategy to deal with emotional impact
+  controlSource: string        // What specifically can you change or control?
+  actionablePower?: string     // Areas within your control
+  longTermSolution?: string    // Long-term solution
+  isPinned: boolean
   createdAt: Date
   updatedAt: Date
+  userId: string
 }
 
 // Mock problem solving entries
 export const mockProblemSolvingEntries: ProblemSolvingEntry[] = [
   {
     id: 'problem-1',
-    title: 'Procrastination on Important Tasks',
-    date: new Date('2024-01-15'),
-    wrongThing: 'Scrolling social media instead of working on priority tasks',
-    trigger: 'Feeling overwhelmed by the size of the task',
+    problemBehavior: 'Scrolling social media instead of working on priority tasks',
+    triggerPattern: 'Feeling overwhelmed by the size of the task',
     isDaily: true,
-    avoidTrigger: 'Break tasks into smaller, manageable chunks and set specific deadlines',
-    onceStarted: 'Set a timer for 5 minutes to just get started, then continue if in flow',
-    longTermImpact: 'Decreased productivity, missed opportunities, increased stress and guilt',
-    shouldDoInstead: 'Use the Pomodoro Technique and tackle one small part at a time',
-    benefits: 'Higher productivity, reduced stress, better quality work, sense of accomplishment',
-    problemNature: 'Emotional/Behavioral',
+    preventiveStrategy: 'Break tasks into smaller, manageable chunks and set specific deadlines',
+    wrongPathReaction: 'Set a timer for 5 minutes to just get started, then continue if in flow',
+    longTermConsequence: 'Decreased productivity, missed opportunities, increased stress and guilt',
+    preferredBehavior: 'Use the Pomodoro Technique and tackle one small part at a time',
+    positiveOutcome: 'Higher productivity, reduced stress, better quality work, sense of accomplishment',
+    problemCategory: 'Emotional/Behavioral',
     emotionalImpact: 70,
-    hasStrategy: true,
-    strategy: 'Deep breathing, breaking tasks down, using accountability partners',
-    hasPower: true,
-    powerToChange: 'Change my environment, use blocking apps, create better routines',
+    copingStrategy: 'Deep breathing, breaking tasks down, using accountability partners',
+    controlSource: 'Change my environment, use blocking apps, create better routines',
+    actionablePower: 'My work environment, phone placement, task breakdown methods',
     longTermSolution: 'Build consistent habits and better task management systems',
+    isPinned: false,
     createdAt: new Date('2024-01-15T10:00:00'),
-    updatedAt: new Date('2024-01-15T10:00:00')
+    updatedAt: new Date('2024-01-15T10:00:00'),
+    userId: 'user-1'
   },
   {
     id: 'problem-2',
-    title: 'Overthinking Before Sleep',
-    date: new Date('2024-01-12'),
-    wrongThing: 'Lying in bed for hours replaying conversations and worrying about tomorrow',
-    trigger: 'Silence and darkness making my mind race with anxious thoughts',
+    problemBehavior: 'Lying in bed for hours replaying conversations and worrying about tomorrow',
+    triggerPattern: 'Silence and darkness making my mind race with anxious thoughts',
     isDaily: true,
-    avoidTrigger: 'Establish a wind-down routine with meditation or journaling before bed',
-    onceStarted: 'Use progressive muscle relaxation or focused breathing exercises',
-    longTermImpact: 'Poor sleep quality, fatigue, decreased cognitive performance, increased anxiety',
-    shouldDoInstead: 'Practice mindfulness meditation and keep a journal by my bedside',
-    benefits: 'Better sleep quality, improved mood, increased energy and focus during the day',
-    problemNature: 'Emotional/Behavioral',
+    preventiveStrategy: 'Establish a wind-down routine with meditation or journaling before bed',
+    wrongPathReaction: 'Use progressive muscle relaxation or focused breathing exercises',
+    longTermConsequence: 'Poor sleep quality, fatigue, decreased cognitive performance, increased anxiety',
+    preferredBehavior: 'Practice mindfulness meditation and keep a journal by my bedside',
+    positiveOutcome: 'Better sleep quality, improved mood, increased energy and focus during the day',
+    problemCategory: 'Emotional/Behavioral',
     emotionalImpact: 60,
-    hasStrategy: true,
-    strategy: 'Meditation app, gratitude journaling, limiting screen time before bed',
-    hasPower: true,
-    powerToChange: 'My bedtime routine, environment setup, thought patterns through practice',
+    copingStrategy: 'Meditation app, gratitude journaling, limiting screen time before bed',
+    controlSource: 'My bedtime routine, environment setup, thought patterns through practice',
+    actionablePower: 'Sleep environment, bedtime activities, mental preparation',
     longTermSolution: 'Consistent meditation practice and cognitive behavioral techniques for anxiety',
+    isPinned: false,
     createdAt: new Date('2024-01-12T09:30:00'),
-    updatedAt: new Date('2024-01-12T09:30:00')
+    updatedAt: new Date('2024-01-12T09:30:00'),
+    userId: 'user-1'
   },
   {
     id: 'problem-3',
-    title: 'Imposter Syndrome at Work',
-    date: new Date('2024-01-10'),
-    wrongThing: 'Doubting my abilities and avoiding challenging projects or speaking up in meetings',
-    trigger: 'Being around highly skilled colleagues or receiving complex assignments',
+    problemBehavior: 'Doubting my abilities and avoiding challenging projects or speaking up in meetings',
+    triggerPattern: 'Being around highly skilled colleagues or receiving complex assignments',
     isDaily: false,
-    avoidTrigger: 'Keep a record of my achievements and positive feedback to review regularly',
-    onceStarted: 'Remind myself that everyone is learning and making mistakes is normal',
-    longTermImpact: 'Limited career growth, missed opportunities, chronic stress and self-doubt',
-    shouldDoInstead: 'Ask questions openly, volunteer for challenging tasks, seek feedback actively',
-    benefits: 'Accelerated learning, stronger relationships with colleagues, career advancement',
-    problemNature: 'Career/Professional',
+    preventiveStrategy: 'Keep a record of my achievements and positive feedback to review regularly',
+    wrongPathReaction: 'Remind myself that everyone is learning and making mistakes is normal',
+    longTermConsequence: 'Limited career growth, missed opportunities, chronic stress and self-doubt',
+    preferredBehavior: 'Ask questions openly, volunteer for challenging tasks, seek feedback actively',
+    positiveOutcome: 'Accelerated learning, stronger relationships with colleagues, career advancement',
+    problemCategory: 'Career/Professional',
     emotionalImpact: 50,
-    hasStrategy: true,
-    strategy: 'Keeping an achievement journal, seeking mentorship, reframing negative self-talk',
-    hasPower: true,
-    powerToChange: 'My mindset, how I interpret situations, the actions I take in response',
+    copingStrategy: 'Keeping an achievement journal, seeking mentorship, reframing negative self-talk',
+    controlSource: 'My mindset, how I interpret situations, the actions I take in response',
+    actionablePower: 'My responses, learning approach, communication choices',
     longTermSolution: 'Build confidence through skill development and celebrate small wins consistently',
+    isPinned: false,
     createdAt: new Date('2024-01-10T14:15:00'),
-    updatedAt: new Date('2024-01-10T14:15:00')
+    updatedAt: new Date('2024-01-10T14:15:00'),
+    userId: 'user-1'
   },
   {
     id: 'problem-4',
-    title: 'Emotional Eating During Stress',
-    date: new Date('2024-01-08'),
-    wrongThing: 'Eating junk food when feeling stressed, anxious, or bored',
-    trigger: 'High stress situations, deadlines, or feeling overwhelmed',
+    problemBehavior: 'Eating junk food when feeling stressed, anxious, or bored',
+    triggerPattern: 'High stress situations, deadlines, or feeling overwhelmed',
     isDaily: false,
-    avoidTrigger: 'Identify stress early and use alternative coping mechanisms',
-    onceStarted: 'Drink water, go for a walk, or call a friend instead of reaching for food',
-    longTermImpact: 'Weight gain, poor energy levels, guilt and shame, health issues',
-    shouldDoInstead: 'Practice stress management techniques like exercise, meditation, or hobbies',
-    benefits: 'Better physical health, stable energy levels, improved self-esteem',
-    problemNature: 'Health/Wellness',
+    preventiveStrategy: 'Identify stress early and use alternative coping mechanisms',
+    wrongPathReaction: 'Drink water, go for a walk, or call a friend instead of reaching for food',
+    longTermConsequence: 'Weight gain, poor energy levels, guilt and shame, health issues',
+    preferredBehavior: 'Practice stress management techniques like exercise, meditation, or hobbies',
+    positiveOutcome: 'Better physical health, stable energy levels, improved self-esteem',
+    problemCategory: 'Health/Wellness',
     emotionalImpact: 80,
-    hasStrategy: true,
-    strategy: 'Meal prep, stress management techniques, finding non-food rewards',
-    hasPower: true,
-    powerToChange: 'My response to stress, food choices, environment and habits',
+    copingStrategy: 'Meal prep, stress management techniques, finding non-food rewards',
+    controlSource: 'My response to stress, food choices, environment and habits',
+    actionablePower: 'Food availability, stress responses, environment setup',
     longTermSolution: 'Develop a comprehensive stress management plan and build healthy eating habits',
+    isPinned: false,
     createdAt: new Date('2024-01-08T16:45:00'),
-    updatedAt: new Date('2024-01-08T16:45:00')
+    updatedAt: new Date('2024-01-08T16:45:00'),
+    userId: 'user-1'
   },
   {
     id: 'problem-5',
-    title: 'Comparing Myself to Others on Social Media',
-    date: new Date('2024-01-05'),
-    wrongThing: 'Scrolling through social media and feeling inadequate compared to others\' highlight reels',
-    trigger: 'Seeing others\' success posts, vacation photos, or achievement announcements',
+    problemBehavior: 'Scrolling through social media and feeling inadequate compared to others\' highlight reels',
+    triggerPattern: 'Seeing others\' success posts, vacation photos, or achievement announcements',
     isDaily: true,
-    avoidTrigger: 'Limit social media usage and curate feeds to include more educational content',
-    onceStarted: 'Remind myself that social media shows curated highlights, not full reality',
-    longTermImpact: 'Decreased self-esteem, anxiety, lost focus on personal goals and growth',
-    shouldDoInstead: 'Focus on my own progress, practice gratitude, engage in real-world activities',
-    benefits: 'Improved self-worth, better focus on personal goals, more authentic relationships',
-    problemNature: 'Emotional/Behavioral',
+    preventiveStrategy: 'Limit social media usage and curate feeds to include more educational content',
+    wrongPathReaction: 'Remind myself that social media shows curated highlights, not full reality',
+    longTermConsequence: 'Decreased self-esteem, anxiety, lost focus on personal goals and growth',
+    preferredBehavior: 'Focus on my own progress, practice gratitude, engage in real-world activities',
+    positiveOutcome: 'Improved self-worth, better focus on personal goals, more authentic relationships',
+    problemCategory: 'Emotional/Behavioral',
     emotionalImpact: 65,
-    hasStrategy: true,
-    strategy: 'Digital detox periods, gratitude practice, focusing on personal growth metrics',
-    hasPower: true,
-    powerToChange: 'My social media habits, mindset, and how I measure success',
+    copingStrategy: 'Digital detox periods, gratitude practice, focusing on personal growth metrics',
+    controlSource: 'My social media habits, mindset, and how I measure success',
+    actionablePower: 'App usage, content consumption, personal metrics focus',
     longTermSolution: 'Develop a healthier relationship with social media and focus on intrinsic motivation',
+    isPinned: false,
     createdAt: new Date('2024-01-05T11:20:00'),
-    updatedAt: new Date('2024-01-05T11:20:00')
+    updatedAt: new Date('2024-01-05T11:20:00'),
+    userId: 'user-1'
   }
 ]
 
@@ -509,3 +494,20 @@ export const mockJournalEntries: JournalEntry[] = [
     updatedAt: new Date('2024-01-19T21:30:00')
   }
 ]
+
+/**
+ * Utility function to check if a PowerSystemTodo is completed today
+ * Handles both Date objects and string dates from API
+ */
+export const isCompletedToday = (todo: { completed: boolean; date: Date | string }): boolean => {
+  if (!todo.completed) return false
+  
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Handle both Date objects and string dates
+  const todoDateStr = todo.date instanceof Date 
+    ? todo.date.toISOString().split('T')[0]
+    : String(todo.date).split('T')[0]
+  
+  return todoDateStr === today
+}

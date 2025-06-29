@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 // GET /api/journal/[id] - Get a specific journal entry
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,9 +18,11 @@ export async function GET(
       )
     }
 
+    const { id } = await params
+
     const journalEntry = await prisma.journalEntry.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       }
     })
@@ -45,7 +47,7 @@ export async function GET(
 // PUT /api/journal/[id] - Update a journal entry
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -57,6 +59,7 @@ export async function PUT(
       )
     }
 
+    const { id } = await params
     const { 
       notes, 
       mood
@@ -65,7 +68,7 @@ export async function PUT(
     // Verify journal entry belongs to user
     const existingEntry = await prisma.journalEntry.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       }
     })
@@ -82,7 +85,7 @@ export async function PUT(
     if (mood !== undefined) updateData.mood = mood
 
     const journalEntry = await prisma.journalEntry.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData
     })
 
@@ -99,7 +102,7 @@ export async function PUT(
 // DELETE /api/journal/[id] - Delete a journal entry
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -111,10 +114,12 @@ export async function DELETE(
       )
     }
 
+    const { id } = await params
+
     // Verify journal entry belongs to user
     const existingEntry = await prisma.journalEntry.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       }
     })
@@ -127,7 +132,7 @@ export async function DELETE(
     }
 
     await prisma.journalEntry.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ message: "Journal entry deleted successfully" })

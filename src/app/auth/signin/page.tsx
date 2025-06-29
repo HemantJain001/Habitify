@@ -37,7 +37,8 @@ export default function SignIn() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
-        router.push("/")
+        // Redirect to dashboard without any URL parameters that might show success messages
+        window.location.href = "/"
       }
     } catch (error) {
       console.error("Sign in error:", error)

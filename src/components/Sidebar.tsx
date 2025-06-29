@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface SidebarProps {
+  onOpenDashboard?: () => void
   onOpenCalendar?: () => void
   onOpenProblemSolving?: () => void
   onOpenTrackYourself?: () => void
@@ -18,28 +20,45 @@ interface SidebarButtonProps {
   label: string
   title: string
   isCollapsed: boolean
+  href?: string
 }
 
-function SidebarButton({ onClick, icon, label, title, isCollapsed }: SidebarButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover cursor-pointer ${
-        isCollapsed ? 'justify-center' : 'gap-3'
-      }`}
-      title={title}
-    >
+function SidebarButton({ onClick, icon, label, title, isCollapsed, href }: SidebarButtonProps) {
+  const content = (
+    <>
       <span className="text-xl transition-transform duration-300 ease-in-out group-hover:scale-110 flex-shrink-0">{icon}</span>
       <span className={`text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white sidebar-content-transition whitespace-nowrap ${
         isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
       }`}>
         {label}
       </span>
+    </>
+  )
+
+  const className = `w-full flex items-center p-3 text-left hover:bg-white/60 dark:hover:bg-gray-800/40 rounded-xl transition-all duration-300 ease-in-out group notion-hover cursor-pointer ${
+    isCollapsed ? 'justify-center' : 'gap-3'
+  }`
+
+  if (href) {
+    return (
+      <Link href={href} className={className} title={title}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={className}
+      title={title}
+    >
+      {content}
     </button>
   )
 }
 
-export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYourself, onOpenJournal, onOpenSolvedProblems, onCollapseChange }: SidebarProps) {
+export function Sidebar({ onOpenDashboard, onOpenCalendar, onOpenProblemSolving, onOpenTrackYourself, onOpenJournal, onOpenSolvedProblems, onCollapseChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleToggleCollapse = () => {
@@ -77,6 +96,14 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYours
       {/* Menu Items */}
       <div className="flex-1 p-3 space-y-1 overflow-y-auto">
         <SidebarButton
+          onClick={onOpenDashboard}
+          icon="🏠"
+          label="Dashboard"
+          title="Dashboard"
+          isCollapsed={isCollapsed}
+        />
+
+        <SidebarButton
           onClick={onOpenCalendar}
           icon="📅"
           label="Calendar"
@@ -101,7 +128,7 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYours
         />
 
         <SidebarButton
-          onClick={onOpenSolvedProblems}
+          href="/solved-problems"
           icon="🧩"
           label="Solved Problems"
           title="Solved Problems"
@@ -113,6 +140,14 @@ export function Sidebar({ onOpenCalendar, onOpenProblemSolving, onOpenTrackYours
           icon="🚀"
           label="Track Yourself"
           title="Track Yourself"
+          isCollapsed={isCollapsed}
+        />
+
+        <SidebarButton
+          href="/behavior-history"
+          icon="📊"
+          label="Behavior History"
+          title="Behavior History"
           isCollapsed={isCollapsed}
         />
       </div>
